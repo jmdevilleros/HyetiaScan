@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+
 # ---------------------------------------------------------------------------------------------
 # Rutinas y funciones
 # ---------------------------------------------------------------------------------------------
@@ -68,11 +69,6 @@ def preprocesar_datos(df, col_fechahora, col_precipitacion):
         st.error('Error en columna de fecha y hora')
         return None
 
-    # Detectar intervalo entre mediciones
-    t0 = df_resultado.iloc[0][col_fechahora]
-    t1 = df_resultado.iloc[1][col_fechahora]
-    intervalo_en_minutos = (t1 - t0).seconds // 60
-
     # Cambiar signo de decimal y convertir a float si es un string
     if df[col_precipitacion].dtype == 'object':
         df_resultado[col_precipitacion] = df[col_precipitacion].apply(
@@ -84,38 +80,53 @@ def preprocesar_datos(df, col_fechahora, col_precipitacion):
         st.error('Error en columna de precipitación')
         return None
 
-    # Valores de precipitacion menor a cero son errores de medición, asumir 0 (no lluvia)
-    # ???????????????????????????????????????????????????????????????????????????????????
-    # TODO: esto esta introducioendo errores de conteo cuando hay pausas
-    # TODO: arreglar
-    df_resultado[col_precipitacion] = df_resultado[col_precipitacion].mask(
-        df_resultado[col_precipitacion] < 0, 0
-    )
+    # Valores de precipitacion menor a cero son errores de medición, eliminarlos 
+    # para dejar que se procesen en las lineas siguientes como lagunas de datos
+    df_resultado = df_resultado[df_resultado[col_precipitacion] >= 0]
+
+    # Detectar intervalo entre mediciones
+    t0 = df_resultado.iloc[0][col_fechahora]
+    t1 = df_resultado.iloc[1][col_fechahora]
+    minutos_intervalo = (t1 - t0).seconds // 60
 
     # Identificar lagunas de mediciones faltantes
-    df_tmp = df_resultado.copy()
-    lagunas = df_tmp[col_fechahora].diff() > pd.Timedelta(minutes=intervalo_en_minutos)
-    lagunas_indices = df_tmp.loc[lagunas, col_fechahora]
+    lagunas = df_resultado[col_fechahora].diff() > pd.Timedelta(minutes=minutos_intervalo)
+    lagunas_indices = df_resultado.loc[lagunas, col_fechahora]
+
     num_lagunas = len(lagunas_indices)
     if num_lagunas > 0:
         with st.expander(':hole: **Lagunas**', expanded=True):
             st.warning(f'{num_lagunas} lagunas detectadas en los datos.')
-            rango_completo = pd.date_range(
-                start=df_tmp[col_fechahora].min(), 
-                end=df_tmp[col_fechahora].max(), 
-                freq=f'{intervalo_en_minutos}T'
-            )
 
-            timestamps_faltantes = sorted(list(set(rango_completo) - set(df_tmp[col_fechahora])))
-            st.write(f'{len(timestamps_faltantes)} mediciones faltantes:')
+            inicio = df_resultado.loc[lagunas.shift(-1, fill_value=False), col_fechahora].tolist()
+            termina = df_resultado.loc[lagunas, col_fechahora].tolist()
+            df_lagunas = pd.DataFrame({'inicio_laguna': inicio, 'termina_laguna': termina})
+            df_lagunas['duracion_laguna'] = \
+                (df_lagunas['termina_laguna'] - df_lagunas['inicio_laguna']).dt.total_seconds() // 60
+            st.dataframe(df_lagunas)
+
+            rango_completo = pd.date_range(
+                start=df_resultado[col_fechahora].min(), 
+                end=df_resultado[col_fechahora].max(), 
+                freq=f'{minutos_intervalo}T'
+            )
+            timestamps_faltantes = rango_completo.difference(df_resultado[col_fechahora])
             df_faltantes = pd.DataFrame(timestamps_faltantes, columns=[col_fechahora])
-            st.dataframe(df_faltantes)
+
+            esperadas = len(rango_completo)
+            recibidas = df.shape[0]
+            faltantes = df_faltantes.shape[0]
+
+            st.write(f'Mediciones recibidas: {recibidas}')
+            st.write(f'Mediciones esperadas: {esperadas}')
+            st.write(f'Mediciones faltantes: {faltantes} ({faltantes/esperadas:.2%})')
 
             fill_zeros = st.toggle('**Rellenar con CEROS** :question:', value=False)
             if fill_zeros:
                 df_faltantes[col_precipitacion] = 0
-                df_resultado = pd.concat([df_resultado, df_faltantes]).sort_values(by=col_fechahora)
-                st.dataframe(df_resultado)
+                df_resultado = pd.concat(
+                    [df_resultado, df_faltantes]
+                ).sort_values(by=col_fechahora)
             else:
                 return None
 
@@ -125,26 +136,23 @@ def preprocesar_datos(df, col_fechahora, col_precipitacion):
         (df_resultado[col_precipitacion] != 0).shift(1)
     df_resultado['grupo'] = df_resultado['cambio'].cumsum()
 
-    # # Realizar la agregación basada en el grupo
+    # Realizar la agregación basada en el grupo
     df_resultado = df_resultado.groupby('grupo').agg(
-        inicia              = (col_fechahora, 'first'),
-        termina             = (col_fechahora, 'last'),
-        duracion            = (
-            col_fechahora, 
-            lambda x: (x.iloc[-1] - x.iloc[0]).seconds // 60 + intervalo_en_minutos
-        ),
-        precipitacion_acumulada = (col_precipitacion, 'sum'),
-
-        # ????????????????????????????????????????????????????
-        # TODO: por que no da iugual a duracion / intervalo???
+        inicia                  = (col_fechahora, 'first'),
+        termina                 = (col_fechahora, 'last'),
         conteo                  = (col_precipitacion, 'count'),
+        precipitacion_acumulada = (col_precipitacion, 'sum'),
     ).reset_index(drop=True)
+
+    # Agregar coiumna de duracion
+    df_resultado['duracion'] = \
+        (df_resultado['termina'] - df_resultado['inicia']).dt.total_seconds() // 60 \
+        + minutos_intervalo
 
     return df_resultado
 
 # ---------------------------------------------------------------------------------------------
-def detectar_aguaceros(df, duracion_minima, pausa_maxima):
-    
+def detectar_aguaceros(df, duracion_minima, pausa_maxima, minutos_intervalo):
     # Filtrar pausas pequeñas
     df_resultado = df[(df['duracion'] > pausa_maxima) | (df['precipitacion_acumulada'] != 0)]
 
@@ -158,9 +166,13 @@ def detectar_aguaceros(df, duracion_minima, pausa_maxima):
     df_resultado = df_resultado.groupby('grupo').agg(
         inicia=('inicia', 'first'),
         termina=('termina', 'last'),
-        duracion=('duracion', 'sum'),
         precipitacion_acumulada=('precipitacion_acumulada', 'sum')
     )
+
+    # Recalcular coiumna de duracion
+    df_resultado['duracion'] = \
+        (df_resultado['termina'] - df_resultado['inicia']).dt.total_seconds() // 60 \
+        + minutos_intervalo
 
     # Filtrar precipitaciones de duracion pequeña
     df_resultado = df_resultado[
@@ -176,6 +188,14 @@ def detectar_aguaceros(df, duracion_minima, pausa_maxima):
 # ---------------------------------------------------------------------------------------------
 def seccion_examinar_aguaceros(df):
     with st.expander(':sleuth_or_spy: *Examinar aguaceros*', expanded=False):
+        # Detectar intervalo
+        minutos_intervalo = df.iloc[0]['duracion'] / df.iloc[0]['conteo']
+
+        st.write(
+            f'Intervalo entre mediciones: {int(minutos_intervalo)} ' 
+            f'minuto{"s" if minutos_intervalo > 1 else ""}'
+        )
+
         parametro_duracion = st.slider(
             "Seleccionar duración mínima de aguacero (minutos)", 
             min_value=5, 
@@ -191,7 +211,9 @@ def seccion_examinar_aguaceros(df):
             value=parametro_duracion,
             step=1
         )
-        df_aguaceros = detectar_aguaceros(df, parametro_duracion, parametro_pausa)
+        df_aguaceros = detectar_aguaceros(
+            df, parametro_duracion, parametro_pausa, minutos_intervalo,
+        )
 
         st.divider()        
         st.write('Aguaceros detectados:')
@@ -288,6 +310,10 @@ def seccion_graficar_curvas_frecuencia(df_aguaceros):
     return
 
 # ---------------------------------------------------------------------------------------------
+def seccion_graficar_curva_aguaceros(df_aguaceros):
+    return
+
+# ---------------------------------------------------------------------------------------------
 def son_columnas_validas(df, col_fechahora, col_precipitacion):
     if (col_fechahora is None) | (col_precipitacion is None):
         return False
@@ -308,6 +334,7 @@ def son_columnas_validas(df, col_fechahora, col_precipitacion):
             return False
 
     return True
+
 
 # ---------------------------------------------------------------------------------------------
 # Sección principal
@@ -333,7 +360,7 @@ if df_datos is not None:
         df_work = preprocesar_datos(df_datos, col_fechahora, col_precipitacion)
 
         if df_work is not None:
-            seccion_visualizar(df_work, 'Ver datos preprocesados')
+            #seccion_visualizar(df_work, 'Ver datos preprocesados')
 
             df_aguaceros = seccion_examinar_aguaceros(df_work)
 
@@ -342,3 +369,5 @@ if df_datos is not None:
             seccion_graficar_aguaceros(df_aguaceros)
 
             seccion_graficar_curvas_frecuencia(df_aguaceros)
+
+            seccion_graficar_curva_aguaceros(df_aguaceros)
