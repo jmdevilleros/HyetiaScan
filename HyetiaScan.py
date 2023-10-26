@@ -1,6 +1,8 @@
 # ---------------------------------------------------------------------------------------------
-# Calculo de curvas HUff para precipitaciones
+# HyetiaScan
+# Análisis de lluvias, aguaceros y curvas de Huff
 # ---------------------------------------------------------------------------------------------
+VERSION = 'v0.5'
 
 # ---------------------------------------------------------------------------------------------
 # Bibliotecas
@@ -478,9 +480,9 @@ def son_columnas_validas(df, col_fechahora, col_precipitacion):
 # Sección principal
 # ---------------------------------------------------------------------------------------------
 
-st.set_page_config(page_title="HyetiaScan - Análisis de lluvias")
+st.set_page_config(page_title=f'HyetiaScan {VERSION}')
 
-st.write('## HyetiaScan - Análisis de lluvias :rain_cloud:')
+st.write(f'## HyetiaScan {VERSION} - Análisis de lluvias :rain_cloud:')
 st.divider()
 
 with st.expander(':open_file_folder: *Cargar datos*', expanded=True):
