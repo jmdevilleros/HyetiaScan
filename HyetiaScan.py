@@ -142,6 +142,7 @@ def preprocesar_datos(df, col_fechahora, col_precipitacion):
         termina                 = (col_fechahora, 'last'),
         conteo                  = (col_precipitacion, 'count'),
         precipitacion_acumulada = (col_precipitacion, 'sum'),
+        mediciones              = (col_precipitacion, lambda p: p.tolist()),
     ).reset_index(drop=True)
 
     # Agregar coiumna de duracion
@@ -152,36 +153,80 @@ def preprocesar_datos(df, col_fechahora, col_precipitacion):
     return df_resultado
 
 # ---------------------------------------------------------------------------------------------
-def detectar_aguaceros(df, duracion_minima, pausa_maxima, minutos_intervalo):
-    # Filtrar pausas pequeñas
-    df_resultado = df[(df['duracion'] > pausa_maxima) | (df['precipitacion_acumulada'] != 0)]
+def unir_precipitaciones(df, pausa_maxima):
+    """
+    Unifica precipitaciones según criterio de contiguidad.
 
-    # Unificar precipitaciones contiguas
-    df_resultado['cambio'] = \
-        (df_resultado['precipitacion_acumulada'] != 0) != \
-        (df_resultado['precipitacion_acumulada'] != 0).shift(1)
-    df_resultado['grupo'] = df_resultado['cambio'].cumsum()
+    Args:
+        df: DataFrame con las precipitaciones.
+        pausa_maxima: Duracion máxima de una pausa entre eventos de lluvia.
 
-    # # Realizar la agregación basada en el grupo
-    df_resultado = df_resultado.groupby('grupo').agg(
-        inicia=('inicia', 'first'),
-        termina=('termina', 'last'),
-        precipitacion_acumulada=('precipitacion_acumulada', 'sum')
+    Returns:
+        DataFrame con las precipitaciones unificadas.
+    """
+
+    # Columna auxiliar para indicar si un evento es parte de lluvia continua o no
+    # True = Evento es parte de lluvia continua
+    # False = No hay lluvia (duracion > pausa_maxima)
+    df['lluvia'] = (df['precipitacion_acumulada'] > 0) | (
+        (df['duracion'] <= pausa_maxima) & (df['precipitacion_acumulada'] == 0)
     )
 
-    # Recalcular coiumna de duracion
+    # Columna auxiliar para enumerar eventos continuos con un numero de secuencia
+    df['secuencia'] = df['lluvia'].ne(df['lluvia'].shift()).cumsum()
+
+    return df
+
+# ---------------------------------------------------------------------------------------------
+def calcular_acumulados(lista_mediciones, factor=100):
+    return (pd.Series(lista_mediciones).cumsum() * factor / sum(lista_mediciones)).to_list()
+
+# ---------------------------------------------------------------------------------------------
+def detectar_aguaceros(
+        df, duracion_minima, pausa_maxima, minutos_intervalo, intensidad_minima,
+):
+
+    df_eventos = unir_precipitaciones(df.copy(), pausa_maxima)
+    #st.dataframe(df_eventos)
+
+    # Realizar la agregación basada en la secuencia de evento
+    df_resultado = df_eventos.groupby('secuencia').agg(
+        inicia                  = ('inicia', 'first'),
+        termina                 = ('termina', 'last'),
+        mediciones              = ('mediciones', lambda p: sum(p, [])),
+        precipitacion_acumulada = ('precipitacion_acumulada', 'sum'),
+    )
+
+    # Recalcular columna de duracion
     df_resultado['duracion'] = \
         (df_resultado['termina'] - df_resultado['inicia']).dt.total_seconds() // 60 \
         + minutos_intervalo
 
+    # Agregar intensidad
+    df_resultado['intensidad'] = \
+        60 * df_resultado['precipitacion_acumulada'] / df_resultado['duracion']
+    
+    # Agregar conteo de mediciones
+    df_resultado['conteo'] = df_resultado['mediciones'].apply(len)
+
+    # Calcular y agregar porcentaje acumulado de mediciones
+    df_resultado['porcentaje_acumulado'] = df_resultado['mediciones'].apply(calcular_acumulados)
+    
     # Filtrar precipitaciones de duracion pequeña
     df_resultado = df_resultado[
         (df_resultado['duracion'] >= duracion_minima) & \
         (df_resultado['precipitacion_acumulada'] != 0)
     ]
 
-    # Agregar intensidad
-    df_resultado['intensidad'] = 60 * df_resultado['precipitacion_acumulada'] / df_resultado['duracion']
+    # Filtrar por intensidad minima
+    df_resultado = df_resultado[(df_resultado['intensidad'] >= intensidad_minima)]
+
+    # Reordenar columnas
+    df_resultado = df_resultado[[
+        'inicia', 'termina', 'duracion', 
+        'intensidad', 'precipitacion_acumulada', 'conteo', 
+        'mediciones', 'porcentaje_acumulado',
+    ]]
 
     return df_resultado.reset_index(drop=True)
 
@@ -211,53 +256,70 @@ def seccion_examinar_aguaceros(df):
             value=parametro_duracion,
             step=1
         )
-        df_aguaceros = detectar_aguaceros(
-            df, parametro_duracion, parametro_pausa, minutos_intervalo,
+
+        parametro_intensidad = st.slider(
+            'Seleccione la intensidad mínima de aguacero',
+            min_value=1,
+            max_value=30,
+            value=1,
+            step=1,
         )
 
-        st.divider()        
-        st.write('Aguaceros detectados:')
-        st.write(df_aguaceros.describe())
-        st.divider()
-        st.dataframe(df_aguaceros)
+        if st.toggle('Detectar aguaceros y calcular gráficas', value=False):
+            df_aguaceros = detectar_aguaceros(
+                df, parametro_duracion, parametro_pausa, minutos_intervalo, parametro_intensidad,
+            )
+
+            st.divider()        
+            st.write('Aguaceros detectados:')
+            st.write(df_aguaceros.describe())
+            st.divider()
+            st.dataframe(df_aguaceros)
+        else:
+            return None
 
         return df_aguaceros
 
 # ---------------------------------------------------------------------------------------------
 def seccion_graficar_aguaceros(df_aguaceros):
-    with st.expander(':bar_chart: *Graficar aguaceros*', expanded=False):
-        fig, ax1 = plt.subplots(figsize=(12, 6))
+    numero_aguaceros = df_aguaceros.shape[0]
+    with st.expander(':chart_with_upwards_trend: *Graficar aguaceros*', expanded=False):
+        if st.button(f'Calcular {numero_aguaceros} curvas', type='primary'):
+            barra_progreso = st.progress(0, '')
+            fig, ax = plt.subplots(figsize=(15, 10))
+            numero_aguaceros = df_aguaceros.shape[0]
+            procesado = 0
+            for _, aguacero in df_aguaceros.iterrows():
+                conteo = aguacero['conteo']
+                porcentaje_duracion = [(i + 1) / conteo * 100 for i in range(conteo)]
+                porcentaje_precipitacion = list(aguacero['porcentaje_acumulado'])
 
-        # Barra para la duración
-        ax1.bar(
-            df_aguaceros.index, df_aguaceros['duracion'], 
-            color='navy', alpha=0.7, label='Duración'
-        )
-        ax1.set_xlabel('Aguaceros')
-        ax1.set_ylabel('Tiempo (minutos)', color='b')
-        ax1.tick_params('y', colors='b')
+                ax.plot(porcentaje_duracion, porcentaje_precipitacion)
+                ax.scatter(porcentaje_duracion, porcentaje_precipitacion, marker='.')
 
-        # Crear el segundo eje y para la precipitación
-        ax2 = ax1.twinx()
-        ax2.plot(
-            df_aguaceros.index, df_aguaceros['precipitacion_acumulada'], 
-            color='cyan', marker='o', linestyle='--', label='Precipitación acumulada'
-        )
-        ax2.set_ylabel('Precipitación acumulada', color='b')
-        ax2.tick_params('y', colors='b')
+                procesado = procesado + 1
+                barra_progreso.progress(
+                    procesado/numero_aguaceros, 
+                    text=f'Curva {procesado} de {numero_aguaceros}'
+                )
+            barra_progreso.empty()
 
-        # Añadir leyendas y título
-        ax1.legend(loc=2)
-        ax2.legend(loc=1)
-        plt.title('Duración y Precipitación de Aguaceros')        
+            ax.set_xticks(range(0,101, 10))
+            ax.set_yticks(range(0,101, 10))
+            ax.grid(which='both', linestyle='--', linewidth=0.5)
+            ax.minorticks_on()
+            ax.grid(which='minor', linestyle=':', linewidth=0.5)
+            ax.set_xlabel('% duración')
+            ax.set_ylabel('% precipitación')
 
-        st.pyplot(fig)
+            plt.title('Curvas de aguaceros')        
+            st.pyplot(fig)
 
     return
 
 # ---------------------------------------------------------------------------------------------
 def seccion_graficar_curvas_frecuencia(df_aguaceros):
-    with st.expander(':bar_chart: *Graficar curvas de frecuencia*', expanded=False):
+    with st.expander(':chart_with_upwards_trend: *Graficar curvas de frecuencia*', expanded=False):
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5))
 
         # Ordenar por duración de mayor a menor
@@ -310,7 +372,83 @@ def seccion_graficar_curvas_frecuencia(df_aguaceros):
     return
 
 # ---------------------------------------------------------------------------------------------
-def seccion_graficar_curva_aguaceros(df_aguaceros):
+def calcular_curvas_huff(df_aguaceros):
+    # Calculo de curvas Huff
+
+    # Preparar dataframe que almacenará datos para curvas Huff
+    datos_huff = pd.DataFrame()
+
+    # Calcular los valores de percentiles a partir de porcentaje_acumulado de aguaceros
+    datos_huff['valores_percentiles'] = df_aguaceros['porcentaje_acumulado'].apply(
+        lambda p: np.percentile(p, [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]).tolist()
+    )
+    # Calcular los valores de cuartiles a partir de porcentaje_acumulado de aguaceros
+    datos_huff['valores_cuartiles'] = df_aguaceros['porcentaje_acumulado'].apply(
+        lambda p: np.percentile(p, [25, 50, 75]).tolist()
+    )
+
+    # Calcula las diferencias entre los cuartiles
+    datos_huff['deltas_cuartiles'] = datos_huff['valores_cuartiles'].apply(
+        lambda p: [p[0], p[1] - p[0], p[2] - p[1], 100 - p[2]]
+    )
+
+    # Calcula el índice del mayor delta para usarlo como clasificacion de tipo de curva Huff
+    # El mayor delta indica que en ese lapso el aguacero tuvo su mayor precipitación
+    datos_huff['indice_mayor_delta'] = datos_huff['deltas_cuartiles'].apply(
+        # enumerate genera tuplas (indice, valor), key indica que max debe comparar por el segundo
+        # item de la tupla (x[1]), el valor que retorna max es una tupla (indice, valor mayor)
+        # asi que extraemos el primer elemento [0], el del indice, para usarlo como categoria 
+        # de cuartil
+        lambda deltas: max(enumerate(deltas), key=lambda x: x[1])[0]
+    )
+
+    # Calcular curvas Huff como promedio de cada correspondiente valor de valores_percentiles
+    curvas_huff = datos_huff.groupby('indice_mayor_delta').agg(
+        {'valores_percentiles': lambda x: np.mean(list(zip(*x)), axis=1)}
+    ).rename(columns={'valores_percentiles': 'curva_huff'}).reset_index()
+
+    curvas_huff['Q'] = 'Q' + (curvas_huff['indice_mayor_delta'] + 1).astype(str)
+    curvas_huff = curvas_huff.drop('indice_mayor_delta', axis=1)
+
+    #st.dataframe(datos_huff)
+    #st.dataframe(curvas_huff)
+
+    return curvas_huff
+
+# ---------------------------------------------------------------------------------------------
+def seccion_graficar_curvas_huff(df_aguaceros):
+    with st.expander(':chart_with_upwards_trend: *Graficar curvas de Huff*', expanded=False):
+        curvas_huff = calcular_curvas_huff(df_aguaceros)
+        fig, ax = plt.subplots(figsize=(8, 5))
+
+        markers = "vDo^"
+        # Se adiciona inicio de grafica desde punto 0,0 para mejor visalizacion
+        valores_eje_x = [p for p in range(0,  101, 10)]
+        for curve_index in range(0, 4):
+            nombre_q = f"Q{curve_index + 1}"
+            datos = [0] + list(curvas_huff.iloc[curve_index]['curva_huff'])
+            ax.plot(valores_eje_x, datos, label=nombre_q, marker=markers[curve_index])
+
+        ax.set_xticks(range(0,101, 10))
+        ax.set_yticks(range(0,101, 10))
+
+        ax.grid(which='both', linestyle='--', linewidth=0.5)
+        ax.minorticks_on()
+        ax.grid(which='minor', linestyle=':', linewidth=0.5)
+
+        ax.set_xlabel('% duración')
+        ax.set_ylabel('% precipitación')
+        ax.legend()
+
+        plt.title('Curvas de Huff')        
+
+        st.pyplot(fig)
+
+        curvas_huff['curva_huff'] = curvas_huff['curva_huff'].apply(
+            lambda x: [round(i, 2) for i in x]
+        )
+        st.dataframe(curvas_huff)
+
     return
 
 # ---------------------------------------------------------------------------------------------
@@ -361,13 +499,9 @@ if df_datos is not None:
 
         if df_work is not None:
             #seccion_visualizar(df_work, 'Ver datos preprocesados')
-
             df_aguaceros = seccion_examinar_aguaceros(df_work)
-
-            st.divider()
-
-            seccion_graficar_aguaceros(df_aguaceros)
-
-            seccion_graficar_curvas_frecuencia(df_aguaceros)
-
-            seccion_graficar_curva_aguaceros(df_aguaceros)
+            if df_aguaceros is not None:
+                st.divider()
+                seccion_graficar_curvas_huff(df_aguaceros)
+                seccion_graficar_curvas_frecuencia(df_aguaceros)
+                seccion_graficar_aguaceros(df_aguaceros)
