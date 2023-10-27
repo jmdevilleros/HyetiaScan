@@ -2,7 +2,7 @@
 # HyetiaScan
 # Análisis de lluvias, aguaceros y curvas de Huff
 # ---------------------------------------------------------------------------------------------
-VERSION = 'v0.5'
+VERSION = 'v0.6'
 
 # ---------------------------------------------------------------------------------------------
 # Bibliotecas
@@ -382,13 +382,13 @@ def calcular_curvas_huff(df_aguaceros):
 
     # Calcular los valores de percentiles a partir de porcentaje_acumulado de aguaceros
     datos_huff['valores_percentiles'] = df_aguaceros['porcentaje_acumulado'].apply(
-        lambda p: np.percentile(p, [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]).tolist()
+        lambda p: np.percentile(p, range(0, 101, 5))
     )
+
     # Calcular los valores de cuartiles a partir de porcentaje_acumulado de aguaceros
     datos_huff['valores_cuartiles'] = df_aguaceros['porcentaje_acumulado'].apply(
         lambda p: np.percentile(p, [25, 50, 75]).tolist()
     )
-
     # Calcula las diferencias entre los cuartiles
     datos_huff['deltas_cuartiles'] = datos_huff['valores_cuartiles'].apply(
         lambda p: [p[0], p[1] - p[0], p[2] - p[1], 100 - p[2]]
@@ -397,10 +397,10 @@ def calcular_curvas_huff(df_aguaceros):
     # Calcula el índice del mayor delta para usarlo como clasificacion de tipo de curva Huff
     # El mayor delta indica que en ese lapso el aguacero tuvo su mayor precipitación
     datos_huff['indice_mayor_delta'] = datos_huff['deltas_cuartiles'].apply(
-        # enumerate genera tuplas (indice, valor), key indica que max debe comparar por el segundo
-        # item de la tupla (x[1]), el valor que retorna max es una tupla (indice, valor mayor)
-        # asi que extraemos el primer elemento [0], el del indice, para usarlo como categoria 
-        # de cuartil
+        # enumerate genera tuplas (indice, valor), key indica que max debe 
+        # comparar por el segundo item de la tupla (x[1]), el valor que retorna 
+        # max es una tupla (indice, valor mayor) asi que extraemos el
+        # primer elemento [0], el del indice, para usarlo como categoria de cuartil
         lambda deltas: max(enumerate(deltas), key=lambda x: x[1])[0]
     )
 
@@ -412,7 +412,7 @@ def calcular_curvas_huff(df_aguaceros):
     curvas_huff['Q'] = 'Q' + (curvas_huff['indice_mayor_delta'] + 1).astype(str)
     curvas_huff = curvas_huff.drop('indice_mayor_delta', axis=1)
 
-    #st.dataframe(datos_huff)
+    st.dataframe(datos_huff['valores_percentiles'])
     #st.dataframe(curvas_huff)
 
     return curvas_huff
@@ -425,17 +425,17 @@ def seccion_graficar_curvas_huff(df_aguaceros):
 
         markers = "vDo^"
         # Se adiciona inicio de grafica desde punto 0,0 para mejor visalizacion
-        valores_eje_x = [p for p in range(0,  101, 10)]
+        valores_eje_x = range(0, 101, 5)
         for curve_index in range(0, 4):
             nombre_q = f"Q{curve_index + 1}"
-            datos = [0] + list(curvas_huff.iloc[curve_index]['curva_huff'])
+            datos = list(curvas_huff.iloc[curve_index]['curva_huff'])
             ax.plot(valores_eje_x, datos, label=nombre_q, marker=markers[curve_index])
 
-        ax.set_xticks(range(0,101, 10))
-        ax.set_yticks(range(0,101, 10))
+        ax.set_xticks(range(0, 101, 5))
+        ax.set_yticks(range(0, 101, 5))
 
         ax.grid(which='both', linestyle='--', linewidth=0.5)
-        ax.minorticks_on()
+        #ax.minorticks_on()
         ax.grid(which='minor', linestyle=':', linewidth=0.5)
 
         ax.set_xlabel('% duración')
