@@ -1,5 +1,5 @@
 *************************************************************************
-# HyetiaScan
+# HyetiaScan (Prototipo)
 Análisis de lluvias, detección de aguaceros y gráficos de curvas de Huff
 Juan Manuel de Villeros Arias
 Mónica Liliana Gallego Jaramillo
