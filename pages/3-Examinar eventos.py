@@ -5,7 +5,7 @@
 # Mónica Liliana Gallego Jaramillo
 # Octubre-Noviembre de 2023
 #
-# Archivo: "1-Visualizar archivo.py" - Ver contenido de archivo .csv origen de datos
+# Archivo: "3-Examinar eventos.py" - Preprocesar datos y examinar eventos de precipitación
 # *********************************************************************************************
 
 
@@ -30,15 +30,14 @@ apcfg = st.session_state['appconfig']
 datos = st.session_state['lluvias']
 
 # Preparar página
-apcfg.configurar_pagina('Visualizar archivo. :page_facing_up:')
+apcfg.configurar_pagina('Examinar eventos. :umbrella_with_rain_drops:')
 
-# Verificar que haya lecturas
+# Verificar que haya datos y columnas seleccionadas
 if datos.df_lecturas is None:
-    st.error(f'No hay lecturas para visualizar.')
+    st.error(f'No hay eventos para visualizar.')
+    st.stop()
+if (datos.col_fechahora is None) | (datos.col_precipitacion is None):
+    st.error('Debe seleccionar columnas de **fecha/hora** y de **precipítación**.')
     st.stop()
 
-# Visualizar
-st.write(f'Contenido de {datos.archivo_io.name}')
-if st.toggle('Incluir descripción?'):
-    st.table(datos.df_lecturas.describe(include='all'))
-st.dataframe(datos.df_lecturas)
+# Procesar
