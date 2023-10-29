@@ -13,36 +13,13 @@
 # Bibliotecas
 # =============================================================================================
 
+from Class_Precipitaciones import Precipitaciones
 import streamlit as st
-import pandas as pd
 
 
 # =============================================================================================
 # Clases
 # =============================================================================================
-
-# ---------------------------------------------------------------------------------------------
-class Precipitaciones:
-
-    # -----------------------------------------------------------------------------------------
-    def __init__(self):
-        self.archivo_io  = None
-        self.df_lecturas = None
-
-        self.col_fechahora     = None
-        self.col_precipitacion = None
-
-    # -----------------------------------------------------------------------------------------
-    def obtener_lecturas(self):
-        # Reiniciar variables dependientes del contenido
-        self.col_fechahora     = None
-        self.col_precipitacion = None
-
-        # TODO: Deteccion de encoding
-        try:
-            self.df_lecturas = pd.read_csv(self.archivo_io)
-        except:
-            self.df_lecturas = None
 
 # ---------------------------------------------------------------------------------------------
 class AppConfig:
@@ -81,10 +58,7 @@ apcfg = st.session_state['appconfig']
 datos = st.session_state['lluvias']
 
 # Preparar página
-apcfg.configurar_pagina(
-    header=f'{apcfg.APPNAME} {apcfg.VERSION} :rain_cloud:',
-    #subheader='Análisis de lluvias.',
-)
+apcfg.configurar_pagina(header=f'{apcfg.APPNAME} {apcfg.VERSION} :rain_cloud:')
 st.write(
     '''
     Examine y analice eventos de precipitación pluviométrica.
@@ -92,7 +66,7 @@ st.write(
     Genere gráficos de curvas de precipitación, frecuencia, Huff.
     '''
 )
-#st.divider()
+st.divider()
 st.subheader('Cargar archivo de precipitaciones.')
 st.write(
     '''
@@ -107,7 +81,7 @@ if datos.archivo_io is None:
     datos.archivo_io = st.file_uploader('Selección de archivo:', type=['csv'])
     datos.obtener_lecturas()
 else:
-    st.warning(f'Tiene cargado [**{datos.archivo_io.name}**]')
+    st.warning(f'Archivo cargado [**{datos.archivo_io.name}**]')
     st.warning(
         f'Columnas seleccionadas: ' 
         f'[**{datos.col_fechahora}**], '

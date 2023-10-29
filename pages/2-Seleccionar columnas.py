@@ -55,18 +55,24 @@ with col1:
     if st.toggle('Revisar tipos de columnas?'):
         st.table(datos.df_lecturas.dtypes)
 
+# Seleccionar y revisar fecha/hora
 st.write('Seleccione una columna de **fecha-hora** y una columna de **precipitación**.')
-datos.col_fechahora = st.selectbox(
+columna1 = st.selectbox(
     'Fecha y hora', 
     datos.df_lecturas.columns, 
     index=busca_indice(list(datos.df_lecturas.columns), datos.col_fechahora),
 )
+if not datos.obtener_columna_fechahora(columna1):
+    st.error(f'[**{columna1}**] no es una columna válida de fecha/hora.')
+
+# Seleccionar y revisar precipitacion
 datos.col_precipitacion = st.selectbox(
     'Precipitacion', 
     datos.df_lecturas.columns, 
     index=busca_indice(list(datos.df_lecturas.columns), datos.col_precipitacion),
 )
 
+# Toggle de previsualización debe ir acá para que se habilite después de haber elegido
 with col2:
     esta_deshabilitado = (datos.col_fechahora is None) | (datos.col_precipitacion is None)
     if st.toggle('Previsualizar algunos datos?', disabled=esta_deshabilitado):

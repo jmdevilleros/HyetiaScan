@@ -41,4 +41,5 @@ if datos.df_lecturas is None:
 st.write(f'Contenido de {datos.archivo_io.name}')
 if st.toggle('Incluir descripción?'):
     st.table(datos.df_lecturas.describe(include='all'))
+st.toast('Desplegando archivo...')
 st.dataframe(datos.df_lecturas)
