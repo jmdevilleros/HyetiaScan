@@ -41,3 +41,5 @@ if (datos.col_fechahora is None) | (datos.col_precipitacion is None):
     st.stop()
 
 # Procesar
+st.write(f'col_fechahora: {datos.col_fechahora}')
+st.write(f'col_precipitacion: {datos.col_precipitacion}')

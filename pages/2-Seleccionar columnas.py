@@ -60,10 +60,11 @@ st.write('Seleccione una columna de **fecha-hora** y una columna de **precipitac
 columna1 = st.selectbox(
     'Fecha y hora', 
     datos.df_lecturas.columns, 
-    index=busca_indice(list(datos.df_lecturas.columns), datos.col_fechahora),
+    index=None,
 )
-if not datos.obtener_columna_fechahora(columna1):
-    st.error(f'[**{columna1}**] no es una columna válida de fecha/hora.')
+if columna1 is not None:
+    if not datos.obtener_columna_fechahora(columna1):
+        st.error(f'[**{columna1}**] no es una columna válida de fecha/hora.')
 
 # Seleccionar y revisar precipitacion
 datos.col_precipitacion = st.selectbox(

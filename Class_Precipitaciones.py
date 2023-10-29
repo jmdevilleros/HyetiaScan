@@ -43,28 +43,20 @@ class Precipitaciones:
 
     # -----------------------------------------------------------------------------------------
     # Retorna True si obtuvo columna, False si no la obtuvo
-    def obtener_columna_fechahora(self, columna):
-        print(f'col_fechahora={columna}')
-        # Verificar que haya columna candidata
-        if columna not in self.df_lecturas.columns:
-            self.col_fechahora = None
-            self.df_eventos = pd.DataFrame()
-            return False
-        
-        # Verificar tipo de fecha y hora
-        # TODO: buscar por que se enloquece cuando se cambia si la col anterior es válida
-        tipo_columna = self.df_lecturas[columna].dtype
-        if tipo_columna == 'object':
+    def obtener_columna_fechahora(self, nombre_columna):
+        es_valida = \
+            (nombre_columna in self.df_lecturas.columns)  & \
+            (self.df_lecturas[nombre_columna].dtype in  ['object', 'datetime64'])
+
+        if es_valida:
             try:
-                self.df_eventos[columna] = pd.to_datetime(self.df_lecturas[columna])
+                columna = pd.to_datetime(self.df_lecturas[nombre_columna])
             except:
-                self.col_fechahora = None
-                return False
-        elif tipo_columna == 'datetime64':
-            self.df_eventos[columna] = self.df_lecturas[columna]
-        else:
-            self.col_fechahora = None
-            return False
-        
-        self.col_fechahora = columna
-        return True
+                es_valida = False
+
+        if es_valida:
+            self.col_fechahora = nombre_columna
+            self.df_eventos[nombre_columna] = columna
+
+        return es_valida
+
