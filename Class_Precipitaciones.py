@@ -43,20 +43,50 @@ class Precipitaciones:
 
     # -----------------------------------------------------------------------------------------
     # Retorna True si obtuvo columna, False si no la obtuvo
-    def obtener_columna_fechahora(self, nombre_columna):
-        es_valida = \
-            (nombre_columna in self.df_lecturas.columns)  & \
-            (self.df_lecturas[nombre_columna].dtype in  ['object', 'datetime64'])
+    def _obtener_columna_fechahora(self, nombre_columna):
+        if (nombre_columna not in self.df_lecturas.columns) \
+            | (self.df_lecturas[nombre_columna].dtype not in  ['object', 'datetime64']):
+            return None
 
-        if es_valida:
+        try:
+            columna = pd.to_datetime(self.df_lecturas[nombre_columna])
+            return columna
+        except:
+            return None
+
+    # -----------------------------------------------------------------------------------------
+    # Retorna True si obtuvo columna, False si no la obtuvo
+    def _obtener_columna_precipitacion(self, nombre_columna):
+        if nombre_columna not in self.df_lecturas.columns:
+            return None
+        
+        tipo_columna = self.df_lecturas[nombre_columna].dtype
+
+        if tipo_columna == 'object':
             try:
-                columna = pd.to_datetime(self.df_lecturas[nombre_columna])
+                columna = self.df_lecturas[nombre_columna].apply(
+                    lambda x: float(x.replace(',', '.'))
+                )
+                return columna
             except:
-                es_valida = False
-
-        if es_valida:
-            self.col_fechahora = nombre_columna
-            self.df_eventos[nombre_columna] = columna
-
-        return es_valida
-
+                return None
+        else:
+            try:
+                columna = pd.to_numeric(self.df_lecturas[nombre_columna])
+                return columna
+            except ValueError:
+                return None
+        
+    # -----------------------------------------------------------------------------------------
+    def asignar_columnas_seleccionadas(self, col_fechahora, col_precipitacion):
+        fechashoras = self._obtener_columna_fechahora(col_fechahora)
+        precipitaciones = self._obtener_columna_precipitacion(col_precipitacion)
+        if (fechashoras is None) | (precipitaciones is None):
+            return False
+        else:
+            self.col_fechahora = col_fechahora
+            self.col_precipitacion = col_precipitacion
+            self.df_eventos = pd.DataFrame(
+                {col_fechahora : fechashoras, col_precipitacion : precipitaciones}
+            )
+            return True
