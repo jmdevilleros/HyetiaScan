@@ -21,24 +21,25 @@ class Precipitaciones:
 
     # -----------------------------------------------------------------------------------------
     def __init__(self):
-        self.archivo_io  = None # Objeto BytesIO para lectura física de archivo
+        self.nombre      = None # Nombre de archivo de lecturas
         self.df_lecturas = None # Dataframe que almacena las lecturas de precipitacion
-        self.df_eventos  = None # Luego de preprocesamiento de lecturas
+        self.inicializa_lecturas()
 
+    # -----------------------------------------------------------------------------------------
+    def inicializa_lecturas(self):
+        self.df_eventos           = None
         self.col_fechahora        = None
         self.col_precipitacion    = None
         self.intervalo_mediciones = None
 
     # -----------------------------------------------------------------------------------------
-    def obtener_lecturas(self):
-        # Reiniciar variables dependientes del contenido
-        self.df_eventos        = None
-        self.col_fechahora     = None
-        self.col_precipitacion = None
+    def obtener_lecturas(self, archivo_io):
+        self.inicializa_lecturas()
 
         # TODO: Deteccion de encoding
         try:
-            self.df_lecturas = pd.read_csv(self.archivo_io)
+            self.df_lecturas = pd.read_csv(archivo_io)
+            self.nombre = archivo_io.name
         except:
             self.df_lecturas = None
 
@@ -86,20 +87,20 @@ class Precipitaciones:
         if (fechashoras is None) | (precipitaciones is None):
             return False
 
+        self.inicializa_lecturas()
+
         self.col_fechahora = col_fechahora
         self.col_precipitacion = col_precipitacion
         self.df_eventos = pd.DataFrame(
             {col_fechahora : fechashoras, col_precipitacion : precipitaciones}
         )
-        self.intervalo_mediciones = 0
 
         return True
 
     # -----------------------------------------------------------------------------------------
     def detectar_intervalo_mediciones(self):
         if self.intervalo_mediciones > 0:
-            # Ya detectado, terminar
-            return True
+            return True # Ya detectado, terminar
         
         es_intervalo_detectable = \
             (isinstance(self.df_eventos, pd.DataFrame)) & \
