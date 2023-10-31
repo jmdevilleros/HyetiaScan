@@ -21,13 +21,13 @@ import streamlit as st
 # =============================================================================================
 
 # Verificar que se haya iniciado en pagina principal
-if 'lluvias' not in st.session_state:
+if 'mediciones' not in st.session_state:
     st.error('No ha cargado ningún archivo.')
     st.stop()
 
 # Variables de nombre breve para acceso a datos de sesión
 apcfg = st.session_state['appconfig']
-datos = st.session_state['lluvias']
+datos = st.session_state['mediciones']
 
 # Preparar página
 apcfg.configurar_pagina('Examinar eventos. :umbrella_with_rain_drops:')

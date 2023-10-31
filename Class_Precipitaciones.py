@@ -46,8 +46,12 @@ class Precipitaciones:
     # -----------------------------------------------------------------------------------------
     # Retorna True si obtuvo columna, False si no la obtuvo
     def _obtener_columna_fechahora(self, nombre_columna):
-        if (nombre_columna not in self.df_lecturas.columns) \
-            | (self.df_lecturas[nombre_columna].dtype not in  ['object', 'datetime64']):
+        if nombre_columna is None:
+            return None
+        if nombre_columna not in self.df_lecturas.columns:
+            return None
+        tipo_columna = self.df_lecturas[nombre_columna].dtype
+        if tipo_columna not in  ['object', 'datetime64']:
             return None
 
         try:
@@ -59,11 +63,12 @@ class Precipitaciones:
     # -----------------------------------------------------------------------------------------
     # Retorna True si obtuvo columna, False si no la obtuvo
     def _obtener_columna_precipitacion(self, nombre_columna):
+
+        if nombre_columna is None:
+            return None
         if nombre_columna not in self.df_lecturas.columns:
             return None
-        
         tipo_columna = self.df_lecturas[nombre_columna].dtype
-
         if tipo_columna == 'object':
             try:
                 columna = self.df_lecturas[nombre_columna].apply(
@@ -88,7 +93,6 @@ class Precipitaciones:
             return False
 
         self.inicializa_lecturas()
-
         self.col_fechahora = col_fechahora
         self.col_precipitacion = col_precipitacion
         self.df_eventos = pd.DataFrame(
@@ -99,7 +103,7 @@ class Precipitaciones:
 
     # -----------------------------------------------------------------------------------------
     def detectar_intervalo_mediciones(self):
-        if self.intervalo_mediciones > 0:
+        if self.intervalo_mediciones is not None:
             return True # Ya detectado, terminar
         
         es_intervalo_detectable = \
@@ -120,7 +124,7 @@ class Precipitaciones:
         return True
 
     # -----------------------------------------------------------------------------------------
-    def detectar_vacios(self):
+    def xxxxxdetectar_vacios(self):
         # Valores de precipitacion menor a cero son errores de medición, eliminarlos 
         # para dejar que se procesen en las lineas siguientes como lagunas de datos
         self.df_eventos = self.df_eventos[self.df_eventos[self.col_precipitacion] >= 0]
@@ -149,7 +153,7 @@ class Precipitaciones:
         return num_vacios, df_vacios
 
     # -----------------------------------------------------------------------------------------
-    def rellenar_vacios(self):
+    def xxxxxxxrellenar_vacios(self):
         rango_completo = pd.date_range(
             start=self.df_eventos[self.col_fechahora].min(), 
             end=self.df_eventos[self.col_fechahora].max(), 

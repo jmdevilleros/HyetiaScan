@@ -19,18 +19,21 @@ import streamlit as st
 
 
 # =============================================================================================
-# Sección principal
+# Globales
 # =============================================================================================
-
-# Inicializar globales
 if 'appconfig' not in st.session_state:
     st.session_state['appconfig'] = AppConfig()
-if 'lluvias' not in st.session_state:
-    st.session_state['lluvias'] = Precipitaciones()
+if 'mediciones' not in st.session_state:
+    st.session_state['mediciones'] = Precipitaciones()
 
 # Variables de nombre breve para acceso a datos de sesión
 apcfg = st.session_state['appconfig']
-datos = st.session_state['lluvias']
+datos = st.session_state['mediciones']
+
+
+# =============================================================================================
+# Sección principal
+# =============================================================================================
 
 # Preparar página
 apcfg.configurar_pagina(subheader=f'{apcfg.APPNAME} {apcfg.VERSION} :rain_cloud:')
@@ -56,6 +59,5 @@ st.caption(
 )
 
 # Visualizar?
-if datos.df_lecturas is not None:
-    if st.toggle('Ver contenido'):
-        st.dataframe(datos.df_lecturas)
+if st.toggle('Ver contenido', disabled=datos.df_lecturas is None):
+    st.dataframe(datos.df_lecturas)

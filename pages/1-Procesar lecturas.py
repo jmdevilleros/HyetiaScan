@@ -23,7 +23,6 @@ import streamlit as st
 def busca_indice(lista, elemento):
     if (lista == None) | (elemento == None):
         return None
-    
     indice = lista.index(elemento)
     return None if indice == -1 else indice
 
@@ -33,13 +32,13 @@ def busca_indice(lista, elemento):
 # =============================================================================================
 
 # Verificar que se haya iniciado en pagina principal
-if 'lluvias' not in st.session_state:
+if 'mediciones' not in st.session_state:
     st.error('No ha cargado ningún archivo.')
     st.stop()
 
 # Variables de nombre breve para acceso a datos de sesión
 apcfg = st.session_state['appconfig']
-datos = st.session_state['lluvias']
+datos = st.session_state['mediciones']
 
 # Preparar página
 apcfg.configurar_pagina(subheader='Procesar lecturas. :white_check_mark:')
@@ -49,41 +48,61 @@ if datos.df_lecturas is None:
     st.error(f'No hay columnas para seleccionar.')
     st.stop()
 
-# ---------------------------------------------------------------------------------------------
+# Visualizar nombre de archivo en uso
+st.caption(f'Archivo: [:orange[{datos.nombre}]]')
+
 # Selección de columnas
 lista_columnas = list(datos.df_lecturas.columns)
-with st.form('Selección de columnas'):
-    fechahora = st.selectbox(
-        'Fecha-hora', 
-        lista_columnas, 
-        index=busca_indice(lista_columnas, datos.col_fechahora),
-    )
-    precipitacion = st.selectbox(
-        'Precipitacion', 
-        lista_columnas, 
-        index=busca_indice(lista_columnas, datos.col_precipitacion),
-    )
-    aplicar_cambios = st.form_submit_button('Aplicar', type='primary')
+salida1, salida2, _ = st.columns(3)
+salida1.write('Selección de columnas:')
+salida3, salida4 = st.columns(2)
+with salida3:
+    with st.form('Selección de columnas'):
+        fechahora = st.selectbox(
+            'Fecha-hora', 
+            lista_columnas, 
+            index=busca_indice(lista_columnas, datos.col_fechahora),
+        )
+        precipitacion = st.selectbox(
+            'Precipitacion', 
+            lista_columnas, 
+            index=busca_indice(lista_columnas, datos.col_precipitacion),
+        )
+        aplicar_cambios = st.form_submit_button('Procesar', type='primary')
+if salida2.toggle('Ver tipos?'):
+    with salida4:
+        st.dataframe(
+            datos.df_lecturas.dtypes, 
+            column_config={
+                ''  : 'Columna',
+                '0' : 'Tipo',
+            }
+        )
 
-# ---------------------------------------------------------------------------------------------
-# Opciones de previsualización
-salida1, salida2 = st.columns(2)
-with salida1:
-    if st.toggle('Revisar tipos de columnas?'):
-        st.table(datos.df_lecturas.dtypes)
-with salida2:
-    flag_visualizar_eventos = st.toggle('Visualizar eventos?')
-
-# ---------------------------------------------------------------------------------------------
-# Procesar cambios
 if aplicar_cambios:
-    if not datos.asignar_columnas_seleccionadas(fechahora, precipitacion):
+    # Asignar columnas elegidas
+    if datos.asignar_columnas_seleccionadas(fechahora, precipitacion):
+        st.toast('Columnas asignadas.')
+    else:
         st.error('Al menos una de las columnas seleccionadas no tiene el tipo apropiado.')
         st.stop()
 
-# ---------------------------------------------------------------------------------------------
+    # Detectar intervalo
+    if not datos.detectar_intervalo_mediciones():
+        st.error('Error detectando intervalo entre mediciones.')
+        st.stop()
+
+    # Manejar lagunas en los datos
+
+    # Calcular eventos
+    datos.calcular_eventos_precipitacion()
+    st.toast('Eventos calculados.')
+
+    # Marcar fin exitoso de calculo de eventos
+    flag_eventos_procesados = True
+
+
 # Visualizar eventos calculados
-if flag_visualizar_eventos:
-    st.divider()
-    st.subheader('Eventos de precipitación generados:')
+if st.toggle('Visualizar eventos?'):
+    st.write(f'Intervalo entre mediciones: [:orange[{datos.intervalo_mediciones}]] minutos')
     st.dataframe(datos.df_eventos)
