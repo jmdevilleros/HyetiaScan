@@ -23,12 +23,12 @@ import streamlit as st
 # =============================================================================================
 if 'appconfig' not in st.session_state:
     st.session_state['appconfig'] = AppConfig()
-if 'mediciones' not in st.session_state:
-    st.session_state['mediciones'] = Precipitaciones()
+if 'precipitaciones' not in st.session_state:
+    st.session_state['precipitaciones'] = Precipitaciones()
 
 # Variables de nombre breve para acceso a datos de sesión
 apcfg = st.session_state['appconfig']
-datos = st.session_state['mediciones']
+datos = st.session_state['precipitaciones']
 
 
 # =============================================================================================
@@ -59,5 +59,5 @@ st.caption(
 )
 
 # Visualizar?
-if st.toggle('Ver contenido', disabled=datos.df_lecturas is None):
-    st.dataframe(datos.df_lecturas)
+if st.toggle('Ver contenido', disabled=datos.df_origen is None):
+    st.dataframe(datos.df_origen)

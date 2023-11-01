@@ -21,12 +21,13 @@ class Precipitaciones:
 
     # -----------------------------------------------------------------------------------------
     def __init__(self):
-        self.nombre      = None # Nombre de archivo de lecturas
-        self.df_lecturas = None # Dataframe que almacena las lecturas de precipitacion
+        self.nombre    = None # Nombre de archivo de lecturas
+        self.df_origen = None # Dataframe que almacena las lecturas de precipitacion
         self.inicializa_lecturas()
 
     # -----------------------------------------------------------------------------------------
     def inicializa_lecturas(self):
+        self.df_mediciones        = None
         self.df_eventos           = None
         self.col_fechahora        = None
         self.col_precipitacion    = None
@@ -38,24 +39,24 @@ class Precipitaciones:
 
         # TODO: Deteccion de encoding
         try:
-            self.df_lecturas = pd.read_csv(archivo_io)
+            self.df_origen = pd.read_csv(archivo_io)
             self.nombre = archivo_io.name
         except:
-            self.df_lecturas = None
+            self.df_origen = None
 
     # -----------------------------------------------------------------------------------------
     # Retorna True si obtuvo columna, False si no la obtuvo
     def _obtener_columna_fechahora(self, nombre_columna):
         if nombre_columna is None:
             return None
-        if nombre_columna not in self.df_lecturas.columns:
+        if nombre_columna not in self.df_origen.columns:
             return None
-        tipo_columna = self.df_lecturas[nombre_columna].dtype
+        tipo_columna = self.df_origen[nombre_columna].dtype
         if tipo_columna not in  ['object', 'datetime64']:
             return None
 
         try:
-            columna = pd.to_datetime(self.df_lecturas[nombre_columna])
+            columna = pd.to_datetime(self.df_origen[nombre_columna])
             return columna
         except:
             return None
@@ -66,12 +67,12 @@ class Precipitaciones:
 
         if nombre_columna is None:
             return None
-        if nombre_columna not in self.df_lecturas.columns:
+        if nombre_columna not in self.df_origen.columns:
             return None
-        tipo_columna = self.df_lecturas[nombre_columna].dtype
+        tipo_columna = self.df_origen[nombre_columna].dtype
         if tipo_columna == 'object':
             try:
-                columna = self.df_lecturas[nombre_columna].apply(
+                columna = self.df_origen[nombre_columna].apply(
                     lambda x: float(x.replace(',', '.'))
                 )
                 return columna
@@ -79,23 +80,24 @@ class Precipitaciones:
                 return None
         else:
             try:
-                columna = pd.to_numeric(self.df_lecturas[nombre_columna])
+                columna = pd.to_numeric(self.df_origen[nombre_columna])
                 return columna
             except ValueError:
                 return None
         
     # -----------------------------------------------------------------------------------------
     def asignar_columnas_seleccionadas(self, col_fechahora, col_precipitacion):
-        fechashoras = self._obtener_columna_fechahora(col_fechahora)
+        self.inicializa_lecturas()
+
+        fechashoras     = self._obtener_columna_fechahora(col_fechahora)
         precipitaciones = self._obtener_columna_precipitacion(col_precipitacion)
 
         if (fechashoras is None) | (precipitaciones is None):
             return False
 
-        self.inicializa_lecturas()
         self.col_fechahora = col_fechahora
         self.col_precipitacion = col_precipitacion
-        self.df_eventos = pd.DataFrame(
+        self.df_mediciones = pd.DataFrame(
             {col_fechahora : fechashoras, col_precipitacion : precipitaciones}
         )
 
@@ -107,15 +109,15 @@ class Precipitaciones:
             return True # Ya detectado, terminar
         
         es_intervalo_detectable = \
-            (isinstance(self.df_eventos, pd.DataFrame)) & \
-            (self.df_eventos.shape[0] > 1)              & \
+            (isinstance(self.df_mediciones, pd.DataFrame)) & \
+            (self.df_mediciones.shape[0] > 1)              & \
             (self.col_fechahora is not None)
 
         if not es_intervalo_detectable:
             return False
         
-        t0 = self.df_eventos.iloc[0][self.col_fechahora]
-        t1 = self.df_eventos.iloc[1][self.col_fechahora]
+        t0 = self.df_mediciones.iloc[0][self.col_fechahora]
+        t1 = self.df_mediciones.iloc[1][self.col_fechahora]
         self.intervalo_mediciones = (t1 - t0).seconds / 60
 
         if self.intervalo_mediciones < 1:
@@ -124,54 +126,54 @@ class Precipitaciones:
         return True
 
     # -----------------------------------------------------------------------------------------
-    def xxxxxdetectar_vacios(self):
-        # Valores de precipitacion menor a cero son errores de medición, eliminarlos 
-        # para dejar que se procesen en las lineas siguientes como lagunas de datos
-        self.df_eventos = self.df_eventos[self.df_eventos[self.col_precipitacion] >= 0]
+    def detectar_lagunas(self):
+        # Asumir valores <0 como mediciones faltantes
+        df_tmp = self.df_mediciones[self.df_mediciones[self.col_precipitacion] >= 0].copy()
 
         delta = pd.Timedelta(minutes=self.intervalo_mediciones)
-        vacios = self.df_eventos[self.col_fechahora].diff() > delta
-        vacios_indices = self.df_eventos.loc[vacios, self.col_fechahora]
+        vacios = df_tmp[self.col_fechahora].diff() > delta
+        vacios_indices = df_tmp.loc[vacios, self.col_fechahora]
         
-        num_vacios = len(vacios_indices)
-        if num_vacios <= 0:
+        num_lagunas = len(vacios_indices)
+        if num_lagunas <= 0:
             return 0, None
         
-        inicio_vacios = self.df_eventos.loc[
-            vacios.shift(-1, fill_value=False), self.col_fechahora
-        ].tolist()
-        termina_vacios = self.df_eventos.loc[
-            vacios, self.col_fechahora
-        ].tolist()
-        df_vacios = pd.DataFrame({
-            'inicia_vacio'  : inicio_vacios, 
-            'termina_vacio' : termina_vacios,
+        inicia  = df_tmp.loc[vacios.shift(-1, fill_value=False), self.col_fechahora].tolist()
+        termina = df_tmp.loc[vacios, self.col_fechahora].tolist()
+        df_lagunas = pd.DataFrame({
+            'inicia'  : inicia, 
+            'termina' : termina,
         })
-        df_vacios['duracion_vacio'] = \
-            (df_vacios['termina_vacio'] - df_vacios['inicia_vacio']).dt.total_seconds() // 60
+        df_lagunas['duracion'] = \
+            (df_lagunas['termina'] - df_lagunas['inicia']).dt.total_seconds() // 60
 
-        return num_vacios, df_vacios
+        return num_lagunas, df_lagunas
 
     # -----------------------------------------------------------------------------------------
-    def xxxxxxxrellenar_vacios(self):
+    def rellenar_faltantes(self):
+        # Asumir valores <0 como mediciones faltantes
+        self.df_mediciones = self.df_mediciones[self.df_mediciones[self.col_precipitacion] >= 0]
+
         rango_completo = pd.date_range(
-            start=self.df_eventos[self.col_fechahora].min(), 
-            end=self.df_eventos[self.col_fechahora].max(), 
+            start=self.df_mediciones[self.col_fechahora].min(), 
+            end=self.df_mediciones[self.col_fechahora].max(), 
             freq=f'{self.intervalo_mediciones}T'
         )
-        timestamps_faltantes = rango_completo.difference(self.df_eventos[self.col_fechahora])
+        timestamps_faltantes = rango_completo.difference(self.df_mediciones[self.col_fechahora])
         df_faltantes = pd.DataFrame(timestamps_faltantes, columns=[self.col_fechahora])
 
         df_faltantes[self.col_precipitacion] = 0
-        self.df_eventos = \
-            pd.concat([self.df_eventos, df_faltantes]).sort_values(by=self.col_fechahora)
+        self.df_mediciones = \
+            pd.concat([self.df_mediciones, df_faltantes]).sort_values(by=self.col_fechahora)
 
-        self.df_eventos.reset_index(drop=True, inplace=True)
+        self.df_mediciones.reset_index(drop=True, inplace=True)
 
         return
     
     # -----------------------------------------------------------------------------------------
     def calcular_eventos_precipitacion(self):
+        self.df_eventos = self.df_mediciones.copy()
+
         # Crear una columna adicional para marcar los cambios de 0 a otro valor y viceversa
         self.df_eventos['cambio'] = \
             (self.df_eventos[self.col_precipitacion] != 0) != \
@@ -188,10 +190,5 @@ class Precipitaciones:
         ).reset_index(drop=True)
 
         # Agregar coiumna de duracion
-        self.df_eventos['duracion'] = \
-            (self.df_eventos['termina'] - self.df_eventos['inicia']).dt.total_seconds() // 60 \
-            + self.intervalo_mediciones
-
-    
-    
-    
+        self.df_eventos['duracion'] = self.intervalo_mediciones + \
+            (self.df_eventos['termina'] - self.df_eventos['inicia']).dt.total_seconds() // 60
