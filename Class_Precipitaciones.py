@@ -104,9 +104,12 @@ class Precipitaciones:
         return True
 
     # -----------------------------------------------------------------------------------------
-    def detectar_intervalo_mediciones(self):
-        if self.intervalo_mediciones is not None:
-            return True # Ya detectado, terminar
+    def calcular_intervalo_mediciones(self):
+        # Iniciar asumiendo que no hay intervalo válido
+        self.intervalo_mediciones = None
+
+        if self.df_mediciones is None:
+            return False
         
         es_intervalo_detectable = \
             (isinstance(self.df_mediciones, pd.DataFrame)) & \
@@ -118,11 +121,12 @@ class Precipitaciones:
         
         t0 = self.df_mediciones.iloc[0][self.col_fechahora]
         t1 = self.df_mediciones.iloc[1][self.col_fechahora]
-        self.intervalo_mediciones = (t1 - t0).seconds / 60
+        detectado = (t1 - t0).seconds / 60
 
-        if self.intervalo_mediciones < 1:
+        if detectado <= 0:
             return False
 
+        self.intervalo_mediciones = detectado
         return True
 
     # -----------------------------------------------------------------------------------------
@@ -172,6 +176,10 @@ class Precipitaciones:
     
     # -----------------------------------------------------------------------------------------
     def calcular_eventos_precipitacion(self):
+        if self.intervalo_mediciones is None:
+            self.df_eventos = None
+            return
+        
         self.df_eventos = self.df_mediciones.copy()
 
         # Crear una columna adicional para marcar los cambios de 0 a otro valor y viceversa

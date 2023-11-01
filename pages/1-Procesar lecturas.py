@@ -48,14 +48,18 @@ if datos.df_origen is None:
     st.error(f'No hay columnas para seleccionar.')
     st.stop()
 
-# Visualizar nombre de archivo en uso
+# Encabezado con información
 st.caption(f'Archivo: [:orange[{datos.nombre}]]')
+salida_intervalo = st.empty()
+
+salida_estado, _    = st.columns(2)
+salida1, salida2, _ = st.columns(3)
+salida3, salida4    = st.columns(2)
 
 # Selección de columnas
+
 lista_columnas = list(datos.df_origen.columns)
-salida1, salida2, _ = st.columns(3)
 salida1.write('Selección de columnas:')
-salida3, salida4 = st.columns(2)
 with salida3:
     with st.form('Selección de columnas'):
         fechahora = st.selectbox(
@@ -75,47 +79,44 @@ if salida2.toggle('Ver tipos?'):
 if aplicar_cambios:
     # Asignar columnas elegidas
     if not datos.asignar_columnas_seleccionadas(fechahora, precipitacion):
-        st.error('Al menos una de las columnas seleccionadas no tiene el tipo apropiado.')
+        salida_estado.error('Error en tipo de columnas.')
         st.stop()
 
-    # Detectar intervalo
-    if not datos.detectar_intervalo_mediciones():
-        st.error('Error en intervalo entre mediciones.')
-        st.stop()
+# ************************************
+# TODO: Detectar mediciones duplicadas
+# ************************************
 
-    # Detectar lagunas en datos
+# Detectar intervalo
+if (datos.df_mediciones is not None) & (not datos.calcular_intervalo_mediciones()):
+    salida_estado.error('Error en intervalo entre mediciones.')
+    st.stop()
+
+# Detectar lagunas en datos
+num_lagunas = 0
+if (datos.df_mediciones is not None) & (datos.intervalo_mediciones is not None):
     num_lagunas, df_lagunas = datos.detectar_lagunas()
     if num_lagunas > 0:
-        st.warning((f'{num_lagunas} lagunas detectadas'))
-        ver_lagunas = st.toggle('Visualizar lagunas?')
-        if ver_lagunas:
-            st.write('aca lagunas')
-
-    # Calcular eventos
-    if num_lagunas == 0:
-        datos.calcular_eventos_precipitacion()
-        st.toast('Eventos calculados.')
-
-if st.toggle('Visualizar eventos?', disabled=datos.df_eventos is None):
-    st.write(f'Intervalo entre mediciones: [:orange[{datos.intervalo_mediciones}]] minutos')
-    st.dataframe(datos.df_eventos)
-
-# # Manejar lagunas en los datos
-# if datos.df_mediciones is not None:
-#     num_lagunas, df_lagunas = datos.detectar_lagunas()
-#     if num_lagunas > 0:
-#         salida5, salida6, _ = st.columns(3)
-#         salida5.warning(f'{num_lagunas} lagunas detectadas')
-#         if salida6.toggle('Visualizar?'):
-#             st.dataframe(df_lagunas)
-#         if salida6.toggle('Rellenar?'):
-#             datos.rellenar_faltantes()
-#             st.success('Datos faltantes rellenados.')
+        if st.toggle('Rellenar faltantes con CEROS?'):
+            datos.rellenar_faltantes()
+            st.rerun()
+        if st.toggle('Ver detalle de lagunas?'):
+            st.dataframe(df_lagunas)
 
 # Calcular eventos
-# if datos.df_eventos is None:
-#     #datos.calcular_eventos_precipitacion()
-#     st.success('Aca cuando se calculen los eventos.')
-# else:
-#     if st.toggle('Visualizar eventos?'):
-#         st.dataframe(datos.df_mediciones)
+if (num_lagunas == 0) & (datos.df_eventos is None) & (datos.df_mediciones is not None):
+    datos.calcular_eventos_precipitacion()
+
+# Indicar si ya se ejecutó procesamiento
+salida_intervalo.caption(
+    f'Intervalo entre mediciones: [ :orange[{datos.intervalo_mediciones}] ] minutos'
+)
+if datos.df_eventos is not None:
+    salida_estado.success('Estado: Procesado.')
+elif num_lagunas > 0:
+    salida_estado.error((f'{num_lagunas} lagunas detectadas'))
+else:
+    salida_estado.warning('Estado: No procesado.')
+
+# Ver eventos calculados
+if st.toggle('Visualizar eventos?', disabled=datos.df_eventos is None):
+    st.dataframe(datos.df_eventos)
