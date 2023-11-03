@@ -14,6 +14,7 @@
 # =============================================================================================
 
 import pandas as pd
+import re
 
 
 # ---------------------------------------------------------------------------------------------
@@ -54,19 +55,33 @@ class Precipitaciones:
     # -----------------------------------------------------------------------------------------
     # Retorna True si obtuvo columna, False si no la obtuvo
     def _obtener_columna_fechahora(self, nombre_columna):
+
+        # ------------------------------------------------------------------------------------
+        def extraer(mensaje_error):
+            # Extrae el valor fallido de fecha
+            failed_date_value = re.findall(r'\"(.*?)\"', mensaje_error)[0]
+
+            # Extrae la posición del valor fallido de fecha
+            position = re.findall(r'position (\d+)', mensaje_error)[0]
+
+            return failed_date_value, int(position)
+
         if nombre_columna is None:
-            return None
+            return None, 'Nombre vacío'
         if nombre_columna not in self.df_origen.columns:
-            return None
+            return None, 'Columna inexistente'
         tipo_columna = self.df_origen[nombre_columna].dtype
         if tipo_columna not in  ['object', 'datetime64']:
-            return None
+            return None, f'Tipo {tipo_columna} desconocido'
 
         try:
             columna = pd.to_datetime(self.df_origen[nombre_columna])
-            return columna
-        except:
-            return None
+            return columna, ''
+        except ValueError as ve:
+            val, pos = extraer(str(ve))
+            return None, f'{val} en posición {pos}'
+        except Exception as e:
+            return None, str(e)
 
     # -----------------------------------------------------------------------------------------
     # Retorna True si obtuvo columna, False si no la obtuvo
@@ -96,11 +111,14 @@ class Precipitaciones:
     def asignar_columnas_seleccionadas(self, col_fechahora, col_precipitacion):
         self.inicializa_lecturas()
 
-        fechashoras     = self._obtener_columna_fechahora(col_fechahora)
+        fechashoras, msg  = self._obtener_columna_fechahora(col_fechahora)
         precipitaciones = self._obtener_columna_precipitacion(col_precipitacion)
 
-        if (fechashoras is None) | (precipitaciones is None):
-            return False
+        if (fechashoras is None):
+            return False, col_fechahora + f': {msg}'
+        
+        if (precipitaciones is None):
+            return False, col_precipitacion
 
         self.col_fechahora = col_fechahora
         self.col_precipitacion = col_precipitacion
@@ -108,7 +126,7 @@ class Precipitaciones:
             {col_fechahora : fechashoras, col_precipitacion : precipitaciones}
         )
 
-        return True
+        return True, None
 
     # -----------------------------------------------------------------------------------------
     def calcular_intervalo_mediciones(self):

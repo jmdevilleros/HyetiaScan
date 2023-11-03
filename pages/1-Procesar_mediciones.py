@@ -78,8 +78,9 @@ if salida2.toggle('Ver tipos?'):
 
 if aplicar_cambios:
     # Asignar columnas elegidas
-    if not datos.asignar_columnas_seleccionadas(fechahora, precipitacion):
-        salida_estado.error('Error en tipo de columnas.')
+    columnas_ok, msg = datos.asignar_columnas_seleccionadas(fechahora, precipitacion)
+    if not columnas_ok:
+        salida_estado.error(f'Error en {msg}')
         st.stop()
 
 # ************************************

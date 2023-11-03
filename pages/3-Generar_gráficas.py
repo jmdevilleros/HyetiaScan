@@ -24,21 +24,37 @@ import matplotlib.pyplot as plt
 # =============================================================================================
 
 # ---------------------------------------------------------------------------------------------
-def seccion_graficar_aguaceros(df_aguaceros):
-    numero_aguaceros = df_aguaceros.shape[0]
+def generar_piedepagina(datos):
+    primera_medicion = datos.df_mediciones[datos.col_fechahora].min()
+    ultima_medicion  = datos.df_mediciones[datos.col_fechahora].max()
+
+    pie= \
+        f'Primera medición: {primera_medicion}'                      +'\n'  + \
+        f'Última medición: {ultima_medicion}'                        +'\n'  + \
+        f'Duracion minima de aguacero: {datos.duracion_minima}'      + '\n' + \
+        f'Pausa máxima entre eventos: {datos.pausa_maxima}'          + '\n' + \
+        f'Intensidad mínima de aguacero: {datos.intensidad_minima}'  + '\n' + \
+        f'Número de aguaceros: {datos.df_aguaceros.shape[0]}'        + '\n' + \
+        f'Medición/Sensor: {datos.col_precipitacion}'
+    
+    return pie
+
+# ---------------------------------------------------------------------------------------------
+def seccion_graficar_aguaceros(datos):
+    numero_aguaceros = datos.df_aguaceros.shape[0]
     with st.expander('Curvas individuales de aguaceros', expanded=False):
         if st.button(f'Calcular {numero_aguaceros} curvas', type='primary'):
             barra_progreso = st.progress(0, '')
-            fig, ax = plt.subplots(figsize=(15, 10))
-            numero_aguaceros = df_aguaceros.shape[0]
+            fig, ax = plt.subplots(figsize=(8, 6))
+            numero_aguaceros = datos.df_aguaceros.shape[0]
             procesado = 0
-            for _, aguacero in df_aguaceros.iterrows():
+            for _, aguacero in datos.df_aguaceros.iterrows():
                 conteo = aguacero['conteo']
                 porcentaje_duracion = [(i + 1) / conteo * 100 for i in range(conteo)]
                 porcentaje_precipitacion = list(aguacero['porcentaje_acumulado'])
 
-                ax.plot(porcentaje_duracion, porcentaje_precipitacion)
-                ax.scatter(porcentaje_duracion, porcentaje_precipitacion, marker='.')
+                ax.plot(porcentaje_duracion, porcentaje_precipitacion, linewidth=0.6)
+                #ax.scatter(porcentaje_duracion, porcentaje_precipitacion, marker='.')
 
                 procesado = procesado + 1
                 barra_progreso.progress(
@@ -55,18 +71,24 @@ def seccion_graficar_aguaceros(df_aguaceros):
             ax.set_xlabel('% duración')
             ax.set_ylabel('% precipitación')
 
-            plt.title('Curvas de aguaceros')        
+            pie = generar_piedepagina(datos)
+            plt.text(100, 5, 
+                pie, fontsize=6, ha='right', 
+                bbox={'facecolor': 'white', 'alpha': 1, 'pad': 2}
+            )
+
+            plt.title(f'Curvas de aguaceros {datos.nombre}', fontsize=10)        
             st.pyplot(fig)
 
     return
 
 # ---------------------------------------------------------------------------------------------
-def seccion_graficar_curvas_frecuencia(df_aguaceros):
+def seccion_graficar_curvas_frecuencia(datos):
     with st.expander('Curvas de frecuencia', expanded=False):
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5))
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 4))
 
         # Ordenar por duración de mayor a menor
-        df_duracion = df_aguaceros.sort_values('duracion', ascending=False)
+        df_duracion = datos.df_aguaceros.sort_values('duracion', ascending=False)
         duracion_max = df_duracion['duracion'].max()
         porcentaje_duracion = [
             (i+1)/len(df_duracion) * 100 for i in range(len(df_duracion))
@@ -79,7 +101,7 @@ def seccion_graficar_curvas_frecuencia(df_aguaceros):
         )
 
         # Ordenar por precipitación acumulada de mayor a menor
-        df_precipitacion = df_aguaceros.sort_values('precipitacion_acumulada', ascending=False)
+        df_precipitacion = datos.df_aguaceros.sort_values('precipitacion_acumulada', ascending=False)
         precipitacion_max = df_precipitacion['precipitacion_acumulada'].max()
         porcentaje_precipitacion = [
             (i+1)/len(df_precipitacion) * 100 for i in range(len(df_precipitacion))
@@ -109,7 +131,13 @@ def seccion_graficar_curvas_frecuencia(df_aguaceros):
         ax2.grid(which='minor', linestyle=':', linewidth=0.5)
 
         # Ajustar y mostrar la figura
-        fig.suptitle('Curvas de frecuencia', ha='center')
+        pie = generar_piedepagina(datos)
+        plt.text(-10, -20, 
+            pie, fontsize=6, ha='center', 
+            bbox={'facecolor': 'white', 'alpha': 1, 'pad': 2}
+        )
+
+        fig.suptitle(f'Curvas de frecuencia {datos.nombre}', fontsize=10, ha='center')
         st.pyplot(fig)
 
     return
@@ -159,7 +187,7 @@ def calcular_curvas_huff(df_aguaceros):
 def seccion_graficar_curvas_huff(datos):
     with st.expander('Curvas de Huff', expanded=False):
         curvas_huff = calcular_curvas_huff(datos.df_aguaceros)
-        fig, ax = plt.subplots(figsize=(8, 5))
+        fig, ax = plt.subplots(figsize=(8, 6))
 
         markers = "vDo^"
         valores_eje_x = range(0, 101, 5)
@@ -181,17 +209,7 @@ def seccion_graficar_curvas_huff(datos):
 
         plt.title(f'Curvas de Huff {datos.nombre}', fontsize=10)
         
-        primera_medicion = datos.df_mediciones[datos.col_fechahora].min()
-        ultima_medicion  = datos.df_mediciones[datos.col_fechahora].max()
-
-        pie= \
-            f'Primera medición: {primera_medicion}'     +'\n'  + \
-            f'Última medición: {ultima_medicion}'       +'\n'  + \
-            f'Duracion minima de aguacero: {datos.duracion_minima}' + '\n' + \
-            f'Pausa máxima entre eventos: {datos.pausa_maxima}'       + '\n' + \
-            f'Intensidad mínima de aguacero: {datos.intensidad_minima}'    + '\n' + \
-            f'Medición/Sensor: {datos.col_precipitacion}'
-        
+        pie = generar_piedepagina(datos)
         plt.text(100, 5, 
             pie, fontsize=6, ha='right', 
             bbox={'facecolor': 'white', 'alpha': 1, 'pad': 2}
@@ -229,5 +247,5 @@ if datos.df_aguaceros is None:
     st.stop()
 
 seccion_graficar_curvas_huff(datos)
-seccion_graficar_curvas_frecuencia(datos.df_aguaceros)
-seccion_graficar_aguaceros(datos.df_aguaceros)
+seccion_graficar_curvas_frecuencia(datos)
+seccion_graficar_aguaceros(datos)
