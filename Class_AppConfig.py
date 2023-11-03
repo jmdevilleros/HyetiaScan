@@ -28,8 +28,17 @@ class AppConfig:
         st.set_page_config(
             page_title=f'{self.APPNAME} {self.VERSION}', 
             layout='wide', 
-            initial_sidebar_state='expanded', 
+            initial_sidebar_state='auto', 
             page_icon=':rain_cloud:',
+            menu_items={
+                'About' : '''
+                ### HyetiaScan - Análisis de lluvias
+                - Juan Manuel de Villeros Arias
+                - Mónica Liliana Gallego Jaramillo
+
+                Noviembre/2023
+                '''
+            }
         )
         if header is not None:
             st.header(header)

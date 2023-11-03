@@ -5,7 +5,7 @@
 # Mónica Liliana Gallego Jaramillo
 # Octubre-Noviembre de 2023
 #
-# Archivo: 0-Cargar_archivo.py - Punto de entrada a aplicación Streamlit
+# Archivo: HyetiaScan.py - Punto de entrada a aplicación Streamlit
 # *********************************************************************************************
 
 
