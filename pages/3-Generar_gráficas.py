@@ -15,7 +15,6 @@
 
 import streamlit as st
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 
 
@@ -82,34 +81,54 @@ def seccion_graficar_aguaceros(datos):
     return
 
 # ---------------------------------------------------------------------------------------------
+def calcular_punto_inflexion(valores_x, valores_y):
+    derivada         = np.gradient(valores_y)
+    indice_inflexion = np.where(np.diff(np.sign(derivada)))[0][0]
+    xy_inflexion     = (valores_x[indice_inflexion], valores_y[indice_inflexion])
+    return xy_inflexion
+
+# ---------------------------------------------------------------------------------------------
+def preparar_curva_frecuencia(ax, df, columna):
+    valores       = df[[columna]].sort_values(columna, ascending=False)
+    num_valores   = valores.shape[0]
+    porcentajes_x = [(i+1)/num_valores * 100 for i in range(num_valores)]
+
+    # Curva
+    ax.plot(porcentajes_x, valores)
+
+    # Punto de inflexión
+    xy_inflexion = calcular_punto_inflexion(porcentajes_x, valores[columna].to_numpy())
+    ax.plot(xy_inflexion[0], xy_inflexion[1], 'ro', markersize=3)
+    ax.text(
+        xy_inflexion[0] + 3, xy_inflexion[1] + 3,
+        f'Punto de Inflexión f\':\n({xy_inflexion[0]:.2f}, {xy_inflexion[1]:.2f})', 
+        fontsize=6, 
+        bbox={'facecolor': 'white', 'alpha': 1, 'pad': 1, 'linewidth': 0.5}
+    )
+
+    ax.set_ylabel(columna.capitalize())
+    ax.set_xlabel('Probabilidad')
+
+    ax.grid(which='both', linestyle='--', linewidth=0.5)
+    ax.minorticks_on()
+    ax.grid(which='minor', linestyle=':', linewidth=0.5)
+
+    return
+
+# ---------------------------------------------------------------------------------------------
 def seccion_graficar_curvas_frecuencia(datos):
     with st.expander('Curvas de frecuencia', expanded=False):
-        df_duracion   = datos.df_aguaceros.sort_values('duracion', ascending=False)
-        df_precipit   = datos.df_aguaceros.sort_values('precipitacion_acumulada', ascending=False)
-
-        num_aguaceros = datos.df_aguaceros.shape[0]
-        porcentajes_x =  [(i+1)/num_aguaceros * 100 for i in range(num_aguaceros)]
-
         fig, (ax_duracion, ax_precipit) = plt.subplots(1, 2, figsize=(8, 4))
         
-        ax_duracion.plot(porcentajes_x, df_duracion['duracion'])
-        ax_precipit.plot(porcentajes_x, df_precipit['precipitacion_acumulada'])
+        preparar_curva_frecuencia(ax_duracion, datos.df_aguaceros, 'duracion')
+        preparar_curva_frecuencia(ax_precipit, datos.df_aguaceros, 'precipitacion_acumulada')
 
-        ax_duracion.set_ylabel('Duración (minutos)')
-        ax_precipit.set_ylabel('Precipitación acumulada (mm)')
-        for ax in [ax_duracion, ax_precipit]:
-            ax.set_xlabel('Probabilidad')
-            ax.grid(which='both', linestyle='--', linewidth=0.5)
-            ax.minorticks_on()
-            ax.grid(which='minor', linestyle=':', linewidth=0.5)
-
+        fig.suptitle(f'Curvas de frecuencia {datos.nombre}', fontsize=10, ha='center')
         pie = generar_piedepagina(datos)
         plt.text(-10, -25, 
             pie, fontsize=6, ha='center', 
             bbox={'facecolor': 'white', 'alpha': 1, 'pad': 2}
         )
-
-        fig.suptitle(f'Curvas de frecuencia {datos.nombre}', fontsize=10, ha='center')
         st.pyplot(fig)
 
     return
