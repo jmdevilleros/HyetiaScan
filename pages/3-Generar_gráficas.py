@@ -84,54 +84,27 @@ def seccion_graficar_aguaceros(datos):
 # ---------------------------------------------------------------------------------------------
 def seccion_graficar_curvas_frecuencia(datos):
     with st.expander('Curvas de frecuencia', expanded=False):
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 4))
+        df_duracion   = datos.df_aguaceros.sort_values('duracion', ascending=False)
+        df_precipit   = datos.df_aguaceros.sort_values('precipitacion_acumulada', ascending=False)
 
-        # Ordenar por duración de mayor a menor
-        df_duracion = datos.df_aguaceros.sort_values('duracion', ascending=False)
-        duracion_max = df_duracion['duracion'].max()
-        porcentaje_duracion = [
-            (i+1)/len(df_duracion) * 100 for i in range(len(df_duracion))
-        ]
+        num_aguaceros = datos.df_aguaceros.shape[0]
+        porcentajes_x =  [(i+1)/num_aguaceros * 100 for i in range(num_aguaceros)]
 
-        # Graficar la curva de frecuencia por duración
-        ax1.plot(
-            porcentaje_duracion, 
-            df_duracion['duracion'], 
-        )
+        fig, (ax_duracion, ax_precipit) = plt.subplots(1, 2, figsize=(8, 4))
+        
+        ax_duracion.plot(porcentajes_x, df_duracion['duracion'])
+        ax_precipit.plot(porcentajes_x, df_precipit['precipitacion_acumulada'])
 
-        # Ordenar por precipitación acumulada de mayor a menor
-        df_precipitacion = datos.df_aguaceros.sort_values('precipitacion_acumulada', ascending=False)
-        precipitacion_max = df_precipitacion['precipitacion_acumulada'].max()
-        porcentaje_precipitacion = [
-            (i+1)/len(df_precipitacion) * 100 for i in range(len(df_precipitacion))
-        ]
+        ax_duracion.set_ylabel('Duración (minutos)')
+        ax_precipit.set_ylabel('Precipitación acumulada (mm)')
+        for ax in [ax_duracion, ax_precipit]:
+            ax.set_xlabel('Probabilidad')
+            ax.grid(which='both', linestyle='--', linewidth=0.5)
+            ax.minorticks_on()
+            ax.grid(which='minor', linestyle=':', linewidth=0.5)
 
-        # Graficar la curva de frecuencia por precipitación acumulada
-        ax2.plot(
-            porcentaje_precipitacion, 
-            df_precipitacion['precipitacion_acumulada'], 
-        )
-
-        # Añadir leyenda y etiquetas
-        ax1.set_xlabel('Probabilidad')
-        ax1.set_ylabel('Duración (minutos)')
-        #ax1.set_title(f'Curva de frecuencia por duración (max={duracion_max})')
-        ax2.set_xlabel('Probabilidad')
-        ax2.set_ylabel('Precipitación acumulada (mm)')
-        #ax2.set_title(f'Curva de frecuencia por precipitación (max={precipitacion_max})')
-
-        # Ajustar la cuadrícula
-        ax1.grid(which='both', linestyle='--', linewidth=0.5)
-        ax1.minorticks_on()
-        ax1.grid(which='minor', linestyle=':', linewidth=0.5)
-
-        ax2.grid(which='both', linestyle='--', linewidth=0.5)
-        ax2.minorticks_on()
-        ax2.grid(which='minor', linestyle=':', linewidth=0.5)
-
-        # Ajustar y mostrar la figura
         pie = generar_piedepagina(datos)
-        plt.text(-10, -20, 
+        plt.text(-10, -25, 
             pie, fontsize=6, ha='center', 
             bbox={'facecolor': 'white', 'alpha': 1, 'pad': 2}
         )
