@@ -14,6 +14,7 @@
 # =============================================================================================
 
 import pandas as pd
+import numpy as np
 import re
 
 
@@ -306,3 +307,42 @@ class Precipitaciones:
         df['secuencia'] = df['lluvia'].ne(df['lluvia'].shift()).cumsum()
 
         return df
+
+    # ---------------------------------------------------------------------------------------------
+    def calcular_curvas_huff(self, intervalo=5):
+        datos_huff = pd.DataFrame()
+
+        # Calcular los valores de percentiles a partir de porcentaje_acumulado de aguaceros
+        # Usar intervalo expecificado como argumento de la función
+        datos_huff['valores_percentiles'] = self.df_aguaceros['porcentaje_acumulado'].apply(
+            lambda p: np.percentile(p, range(0, 101, intervalo))
+        )
+
+        # Calcular los valores de cuartiles a partir de porcentaje_acumulado de aguaceros
+        datos_huff['valores_cuartiles'] = self.df_aguaceros['porcentaje_acumulado'].apply(
+            lambda p: np.percentile(p, [25, 50, 75]).tolist()
+        )
+        # Calcula las diferencias entre los cuartiles
+        datos_huff['deltas_cuartiles'] = datos_huff['valores_cuartiles'].apply(
+            lambda p: [p[0], p[1] - p[0], p[2] - p[1], 100 - p[2]]
+        )
+
+        # Calcula el índice del mayor delta para usarlo como clasificacion de tipo de curva Huff
+        # El mayor delta indica que en ese lapso el aguacero tuvo su mayor precipitación
+        datos_huff['indice_mayor_delta'] = datos_huff['deltas_cuartiles'].apply(
+            # enumerate genera tuplas (indice, valor), key indica que max debe 
+            # comparar por el segundo item de la tupla (x[1]), el valor que retorna 
+            # max es una tupla (indice, valor mayor) asi que extraemos el
+            # primer elemento [0], el del indice, para usarlo como categoria de cuartil
+            lambda deltas: max(enumerate(deltas), key=lambda x: x[1])[0]
+        )
+
+        # Calcular curvas Huff como promedio de cada correspondiente valor de valores_percentiles
+        curvas_huff = datos_huff.groupby('indice_mayor_delta').agg(
+            {'valores_percentiles': lambda x: np.mean(list(zip(*x)), axis=1)}
+        ).reset_index()
+
+        curvas_huff['Q'] = 'Q' + (curvas_huff['indice_mayor_delta'] + 1).astype(str)
+        curvas_huff = curvas_huff.drop('indice_mayor_delta', axis=1)
+
+        return curvas_huff

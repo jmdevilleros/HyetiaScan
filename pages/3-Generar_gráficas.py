@@ -54,7 +54,6 @@ def seccion_graficar_aguaceros(datos):
                 porcentaje_precipitacion = list(aguacero['porcentaje_acumulado'])
 
                 ax.plot(porcentaje_duracion, porcentaje_precipitacion, linewidth=0.6)
-                #ax.scatter(porcentaje_duracion, porcentaje_precipitacion, marker='.')
 
                 procesado = procesado + 1
                 barra_progreso.progress(
@@ -143,64 +142,30 @@ def seccion_graficar_curvas_frecuencia(datos):
     return
 
 # ---------------------------------------------------------------------------------------------
-def calcular_curvas_huff(df_aguaceros):
-    # Calculo de curvas Huff
-
-    # Preparar dataframe que almacenará datos para curvas Huff
-    datos_huff = pd.DataFrame()
-
-    # Calcular los valores de percentiles a partir de porcentaje_acumulado de aguaceros
-    datos_huff['valores_percentiles'] = df_aguaceros['porcentaje_acumulado'].apply(
-        lambda p: np.percentile(p, range(0, 101, 5))
-    )
-
-    # Calcular los valores de cuartiles a partir de porcentaje_acumulado de aguaceros
-    datos_huff['valores_cuartiles'] = df_aguaceros['porcentaje_acumulado'].apply(
-        lambda p: np.percentile(p, [25, 50, 75]).tolist()
-    )
-    # Calcula las diferencias entre los cuartiles
-    datos_huff['deltas_cuartiles'] = datos_huff['valores_cuartiles'].apply(
-        lambda p: [p[0], p[1] - p[0], p[2] - p[1], 100 - p[2]]
-    )
-
-    # Calcula el índice del mayor delta para usarlo como clasificacion de tipo de curva Huff
-    # El mayor delta indica que en ese lapso el aguacero tuvo su mayor precipitación
-    datos_huff['indice_mayor_delta'] = datos_huff['deltas_cuartiles'].apply(
-        # enumerate genera tuplas (indice, valor), key indica que max debe 
-        # comparar por el segundo item de la tupla (x[1]), el valor que retorna 
-        # max es una tupla (indice, valor mayor) asi que extraemos el
-        # primer elemento [0], el del indice, para usarlo como categoria de cuartil
-        lambda deltas: max(enumerate(deltas), key=lambda x: x[1])[0]
-    )
-
-    # Calcular curvas Huff como promedio de cada correspondiente valor de valores_percentiles
-    curvas_huff = datos_huff.groupby('indice_mayor_delta').agg(
-        {'valores_percentiles': lambda x: np.mean(list(zip(*x)), axis=1)}
-    ).reset_index()
-
-    curvas_huff['Q'] = 'Q' + (curvas_huff['indice_mayor_delta'] + 1).astype(str)
-    curvas_huff = curvas_huff.drop('indice_mayor_delta', axis=1)
-
-    return curvas_huff
-
-# ---------------------------------------------------------------------------------------------
 def seccion_graficar_curvas_huff(datos):
     with st.expander('Curvas de Huff', expanded=False):
-        curvas_huff = calcular_curvas_huff(datos.df_aguaceros)
+        intervalo_percentiles = st.slider(
+            'Seleccione intervalo de percentiles Huff',
+            min_value=5,
+            max_value=50,
+            step=5,
+            value=10,
+        )
+
+        curvas_huff = datos.calcular_curvas_huff(intervalo=intervalo_percentiles)
+        valores_eje_x = range(0, 101, intervalo_percentiles)
+
         fig, ax = plt.subplots(figsize=(8, 6))
-
         markers = "vDo^"
-        valores_eje_x = range(0, 101, 5)
-        for curve_index in range(0, 4):
-            nombre_q = f"Q{curve_index + 1}"
-            valores = list(curvas_huff.iloc[curve_index]['valores_percentiles'])
-            ax.plot(valores_eje_x, valores, label=nombre_q, marker=markers[curve_index])
+        for indice_curva in range(0, 4):
+            nombre_q = f"Q{indice_curva + 1}"
+            valores = list(curvas_huff.iloc[indice_curva]['valores_percentiles'])
+            ax.plot(valores_eje_x, valores, label=nombre_q, marker=markers[indice_curva])
 
-        ax.set_xticks(range(0, 101, 5))
-        ax.set_yticks(range(0, 101, 5))
+        ax.set_xticks(range(0, 101, intervalo_percentiles))
+        ax.set_yticks(range(0, 101, intervalo_percentiles))
 
         ax.grid(which='both', linestyle='--', linewidth=0.5)
-        #ax.minorticks_on()
         ax.grid(which='minor', linestyle=':', linewidth=0.5)
 
         ax.set_xlabel('% duración')
@@ -208,7 +173,6 @@ def seccion_graficar_curvas_huff(datos):
         ax.legend()
 
         plt.title(f'Curvas de Huff {datos.nombre}', fontsize=10)
-        
         pie = generar_piedepagina(datos)
         plt.text(100, 5, 
             pie, fontsize=6, ha='right', 
@@ -217,10 +181,11 @@ def seccion_graficar_curvas_huff(datos):
 
         st.pyplot(fig)
 
-        curvas_huff['valores_percentiles'] = curvas_huff['valores_percentiles'].apply(
-            lambda x: [round(i, 2) for i in x]
-        )
-        st.dataframe(curvas_huff, column_order=('Q', 'valores_percentiles'), hide_index=True)
+        if st.toggle('Ver valores percentiles'):
+            curvas_huff['valores_percentiles'] = curvas_huff['valores_percentiles'].apply(
+                lambda x: [round(i, 2) for i in x]
+            )
+            st.dataframe(curvas_huff, column_order=('Q', 'valores_percentiles'), hide_index=True)
 
     return
 
