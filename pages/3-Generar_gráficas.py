@@ -144,11 +144,9 @@ def seccion_graficar_curvas_frecuencia(datos):
 # ---------------------------------------------------------------------------------------------
 def seccion_graficar_curvas_huff(datos):
     with st.expander('Curvas de Huff', expanded=False):
-        intervalo_percentiles = st.slider(
+        intervalo_percentiles = st.select_slider(
             'Seleccione intervalo de percentiles Huff',
-            min_value=5,
-            max_value=50,
-            step=5,
+            options=[5, 10, 20, 25, 50],
             value=10,
         )
 
@@ -163,7 +161,7 @@ def seccion_graficar_curvas_huff(datos):
             ax.plot(valores_eje_x, valores, label=nombre_q, marker=markers[indice_curva])
 
         ax.set_xticks(range(0, 101, intervalo_percentiles))
-        ax.set_yticks(range(0, 101, intervalo_percentiles))
+        ax.set_yticks(range(0, 101, 5))
 
         ax.grid(which='both', linestyle='--', linewidth=0.5)
         ax.grid(which='minor', linestyle=':', linewidth=0.5)
