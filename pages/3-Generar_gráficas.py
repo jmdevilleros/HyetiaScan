@@ -82,9 +82,20 @@ def seccion_graficar_aguaceros(datos):
 
 # ---------------------------------------------------------------------------------------------
 def calcular_punto_inflexion(valores_x, valores_y):
-    derivada         = np.gradient(valores_y)
+    if len(valores_y) <= 1:
+        return None
+    
+    # Calcular derivada y detectar si hay puntos de inflexión
+    derivada = np.gradient(valores_y)
+    if len(derivada) <= 1:
+        return None  # No hay suficientes puntos para definir un punto de inflexión.
+    if np.all(derivada > 0) or np.all(derivada < 0):
+        return None  # La derivada nunca cambia de signo, no hay puntos de inflexión.
+
+    # Obtener coordenadas de primer punto de inflexión
     indice_inflexion = np.where(np.diff(np.sign(derivada)))[0][0]
     xy_inflexion     = (valores_x[indice_inflexion], valores_y[indice_inflexion])
+
     return xy_inflexion
 
 # ---------------------------------------------------------------------------------------------
@@ -96,15 +107,16 @@ def preparar_curva_frecuencia(ax, df, columna):
     # Curva
     ax.plot(porcentajes_x, valores)
 
-    # Punto de inflexión
+    # Punto de inflexión (Si lo hay)
     xy_inflexion = calcular_punto_inflexion(porcentajes_x, valores[columna].to_numpy())
-    ax.plot(xy_inflexion[0], xy_inflexion[1], 'ro', markersize=3)
-    ax.text(
-        xy_inflexion[0] + 3, xy_inflexion[1] + 3,
-        f'Punto de Inflexión f\':\n({xy_inflexion[0]:.2f}, {xy_inflexion[1]:.2f})', 
-        fontsize=6, 
-        bbox={'facecolor': 'white', 'alpha': 1, 'pad': 1, 'linewidth': 0.5}
-    )
+    if xy_inflexion is not None:
+        ax.plot(xy_inflexion[0], xy_inflexion[1], 'ro', markersize=3)
+        ax.text(
+            xy_inflexion[0] + 3, xy_inflexion[1] + 3,
+            f'Punto de Inflexión f\':\n({xy_inflexion[0]:.2f}, {xy_inflexion[1]:.2f})', 
+            fontsize=6, 
+            bbox={'facecolor': 'white', 'alpha': 1, 'pad': 1, 'linewidth': 0.5}
+        )
 
     ax.set_ylabel(columna.capitalize())
     ax.set_xlabel('Probabilidad')
