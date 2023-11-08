@@ -130,6 +130,10 @@ def preparar_curva_frecuencia(ax, df, columna):
 # ---------------------------------------------------------------------------------------------
 def seccion_graficar_curvas_frecuencia(datos):
     with st.expander('Curvas de frecuencia', expanded=False):
+        if datos.df_aguaceros.shape[0] <= 1:
+            st.warning('Se requieren dos o mas aguaceros para calcular frecuencias.')
+            return
+        
         fig, (ax_duracion, ax_precipit) = plt.subplots(1, 2, figsize=(8, 4))
         
         preparar_curva_frecuencia(ax_duracion, datos.df_aguaceros, 'duracion')
