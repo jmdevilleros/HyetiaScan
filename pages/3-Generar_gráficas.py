@@ -155,18 +155,17 @@ def seccion_graficar_curvas_huff(datos):
         )
 
         curvas_huff = datos.calcular_curvas_huff(intervalo=intervalo_percentiles)
-        if curvas_huff.shape[0] < 4:
-            st.warning('No hay suficientes aguaceros.')
-            return
-        
         valores_eje_x = range(0, 101, intervalo_percentiles)
 
         fig, ax = plt.subplots(figsize=(8, 6))
-        markers = "vDo^"
-        for indice_curva in range(0, 4):
-            nombre_q = f"Q{indice_curva + 1}"
-            valores = list(curvas_huff.iloc[indice_curva]['valores_percentiles'])
-            ax.plot(valores_eje_x, valores, label=nombre_q, marker=markers[indice_curva])
+        marcas = "vDo^"
+        for indice, curva in curvas_huff.iterrows():
+            ax.plot(
+                valores_eje_x,
+                list(curva['valores_percentiles']),
+                label=curva['Q'],
+                marker=marcas[indice]
+            )
 
         ax.set_xticks(range(0, 101, intervalo_percentiles))
         ax.set_yticks(range(0, 101, 5))
