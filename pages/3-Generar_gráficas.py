@@ -155,6 +155,10 @@ def seccion_graficar_curvas_huff(datos):
         )
 
         curvas_huff = datos.calcular_curvas_huff(intervalo=intervalo_percentiles)
+        if curvas_huff.shape[0] < 4:
+            st.warning('No hay suficientes aguaceros.')
+            return
+        
         valores_eje_x = range(0, 101, intervalo_percentiles)
 
         fig, ax = plt.subplots(figsize=(8, 6))
