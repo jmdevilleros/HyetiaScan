@@ -1,9 +1,12 @@
 [theme]
 primaryColor="#5d83e2"
 backgroundColor="#010e29"
-secondaryBackgroundColor="#292e39"
+secondaryBackgroundColor="#18223B"
 textColor="#d7ebef"
 
 [server]
-maxUploadSize = 250
+maxUploadSize = 200
 maxMessageSize = 300
+
+[browser]
+gatherUsageStats = false
