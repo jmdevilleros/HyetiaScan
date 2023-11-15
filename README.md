@@ -7,6 +7,8 @@ Análisis de lluvias, detección de aguaceros y gráficos de curvas de Huff
 - Mónica Liliana Gallego Jaramillo
 
 Noviembre/2023
+
+Contacto: hyetiascan@teoktonos.com
 *************************************************************************
 
 Cargue información desde un archivo .csv con datos de precipitaciones. 

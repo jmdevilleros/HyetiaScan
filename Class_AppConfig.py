@@ -32,11 +32,13 @@ class AppConfig:
             page_icon=':rain_cloud:',
             menu_items={
                 'About' : '''
-                ### HyetiaScan - Análisis de lluvias
-                - Juan Manuel de Villeros Arias
-                - Mónica Liliana Gallego Jaramillo
+                    ### HyetiaScan - Análisis de lluvias
+                    - Juan Manuel de Villeros Arias
+                    - Mónica Liliana Gallego Jaramillo
 
-                Noviembre/2023
+                    Noviembre/2023
+
+                    Contacto: hyetiascan@teoktonos.com
                 '''
             }
         )
