@@ -25,12 +25,12 @@ import matplotlib.pyplot as plt
 # ---------------------------------------------------------------------------------------------
 def generar_piedepagina(datos):
     return \
-        f'Primera medición: {datos.primera_fecha}'                   +'\n'  + \
-        f'Última medición: {datos.ultima_fecha}'                     +'\n'  + \
-        f'Duracion minima de aguacero: {datos.duracion_minima}'      + '\n' + \
-        f'Pausa máxima entre eventos: {datos.pausa_maxima}'          + '\n' + \
-        f'Intensidad mínima de aguacero: {datos.intensidad_minima}'  + '\n' + \
-        f'Número de aguaceros: {datos.df_aguaceros.shape[0]}'        + '\n' + \
+        f'Primera medición: {datos.primera_fecha}'                               +'\n'  + \
+        f'Última medición: {datos.ultima_fecha}'                                 +'\n'  + \
+        f'Rango de duración: {datos.duracion_minima} - {datos.duracion_maxima}'  + '\n' + \
+        f'Pausa máxima entre eventos: {datos.pausa_maxima}'                      + '\n' + \
+        f'Intensidad mínima de aguacero: {datos.intensidad_minima}'              + '\n' + \
+        f'Número de aguaceros: {datos.df_aguaceros.shape[0]}'                    + '\n' + \
         f'Medición/Sensor: {datos.col_precipitacion}'
     
 # ---------------------------------------------------------------------------------------------

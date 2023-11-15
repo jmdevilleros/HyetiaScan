@@ -39,10 +39,12 @@ class Precipitaciones:
 
         # Criterios de aguacero por defecto
         self.duracion_minima   = 15
+        self.duracion_maxima   = 120
+        self.duracion_tope     = 10000
         self.pausa_maxima      = 5
         self.intensidad_minima = 2
         self.primera_fecha     = None
-        self.ultima_fecha   = None
+        self.ultima_fecha      = None
 
     # -----------------------------------------------------------------------------------------
     def obtener_lecturas(self, archivo_io):
@@ -231,6 +233,18 @@ class Precipitaciones:
         # Agregar coiumna de duracion
         self.df_eventos['duracion'] = self.intervalo_mediciones + \
             (self.df_eventos['termina'] - self.df_eventos['inicia']).dt.total_seconds() // 60
+        
+        # Estimar duracion tope e inicializar maxima en ese mismo valor
+        # Diferente de la maxima: "maxima" define el criterio de deteccion,
+        # "tope" estima el valor tope que puede tomar la duracion con los datos.
+        # Se estima como la duracion conjunta de los dos eventos mas largos.
+        self.duracion_tope = int(
+            self.df_eventos.loc[
+                self.df_eventos['precipitacion_acumulada'] > 0, 
+                'duracion'
+            ].nlargest(2).sum()
+        )
+        self.duracion_maxima = self.duracion_tope
 
     # -----------------------------------------------------------------------------------------
     def detectar_aguaceros(self):
@@ -276,9 +290,10 @@ class Precipitaciones:
         # Calcular y agregar porcentaje acumulado de mediciones
         df['porcentaje_acumulado'] = df['mediciones'].apply(calcular_acumulados)
         
-        # Filtrar precipitaciones de duracion pequeña
+        # Filtrar precipitaciones por duración
         df = df[
             (df['duracion'] >= self.duracion_minima) & \
+            (df['duracion'] <= self.duracion_maxima) & \
             (df['precipitacion_acumulada'] != 0)
         ]
 
