@@ -21,7 +21,7 @@ class AppConfig:
     # -----------------------------------------------------------------------------------------
     def __init__(self):
         self.APPNAME = 'HyetiaScan'
-        self.VERSION = '1.0'
+        self.VERSION = '1.01'
 
     # -----------------------------------------------------------------------------------------
     def configurar_pagina(self, header=None, subheader=None):

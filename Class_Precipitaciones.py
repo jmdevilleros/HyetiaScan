@@ -41,6 +41,8 @@ class Precipitaciones:
         self.duracion_minima   = 15
         self.pausa_maxima      = 5
         self.intensidad_minima = 2
+        self.primera_fecha     = None
+        self.ultima_fecha   = None
 
     # -----------------------------------------------------------------------------------------
     def obtener_lecturas(self, archivo_io):
@@ -126,6 +128,9 @@ class Precipitaciones:
         self.df_mediciones = pd.DataFrame(
             {col_fechahora : fechashoras, col_precipitacion : precipitaciones}
         )
+
+        self.primera_fecha = self.df_mediciones[self.col_fechahora].min()
+        self.ultima_fecha  = self.df_mediciones[self.col_fechahora].max()
 
         return True, None
 
@@ -249,6 +254,12 @@ class Precipitaciones:
             mediciones              = ('mediciones', lambda p: sum(p, [])),
             precipitacion_acumulada = ('precipitacion_acumulada', 'sum'),
         )
+
+        # Filtrar por rango de fechas deseadas
+        df = df.loc[
+            (df['termina'] >= pd.to_datetime(self.primera_fecha)) & \
+            (df['termina'] <= pd.to_datetime(self.ultima_fecha))
+        ]
 
         # Recalcular columna de duracion
         df['duracion'] = \

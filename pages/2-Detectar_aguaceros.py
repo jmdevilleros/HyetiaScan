@@ -40,6 +40,21 @@ if datos.df_eventos is None:
 # Definir parámetros para detectar aguaceros
 with st.expander('Parámetros.', expanded=True):
     with st.form('Definir parámetros', ):
+        fecha1, fecha2 = st.columns(2)
+        datos.primera_fecha = fecha1.date_input(
+            'Seleccionar fecha inicial:', 
+            value=datos.primera_fecha,
+            min_value=datos.df_mediciones[datos.col_fechahora].min(),
+            max_value=datos.df_mediciones[datos.col_fechahora].max(),
+        )
+
+        datos.ultima_fecha = fecha2.date_input(
+            'Seleccionar fecha final:', 
+            value=datos.ultima_fecha,
+            min_value=datos.df_mediciones[datos.col_fechahora].min(),
+            max_value=datos.df_mediciones[datos.col_fechahora].max(),
+        )
+
         datos.duracion_minima = st.slider(
             "Seleccionar duración mínima de aguacero (minutos)", 
             min_value=int(datos.intervalo_mediciones), 
