@@ -21,7 +21,7 @@ class AppConfig:
     # -----------------------------------------------------------------------------------------
     def __init__(self):
         self.APPNAME = 'HyetiaScan'
-        self.VERSION = '1.0'
+        self.VERSION = '1.01'
 
     # -----------------------------------------------------------------------------------------
     def configurar_pagina(self, header=None, subheader=None):
@@ -32,11 +32,13 @@ class AppConfig:
             page_icon=':rain_cloud:',
             menu_items={
                 'About' : '''
-                ### HyetiaScan - Análisis de lluvias
-                - Juan Manuel de Villeros Arias
-                - Mónica Liliana Gallego Jaramillo
+                    ### HyetiaScan - Análisis de lluvias
+                    - Juan Manuel de Villeros Arias
+                    - Mónica Liliana Gallego Jaramillo
 
-                Noviembre/2023
+                    Noviembre/2023
+
+                    Contacto: hyetiascan@teoktonos.com
                 '''
             }
         )

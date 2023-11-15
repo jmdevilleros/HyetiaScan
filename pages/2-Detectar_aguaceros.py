@@ -40,12 +40,37 @@ if datos.df_eventos is None:
 # Definir parámetros para detectar aguaceros
 with st.expander('Parámetros.', expanded=True):
     with st.form('Definir parámetros', ):
-        datos.duracion_minima = st.slider(
-            "Seleccionar duración mínima de aguacero (minutos)", 
+        zona_fecha1, zona_fecha2 = st.columns(2)
+        datos.primera_fecha = zona_fecha1.date_input(
+            'Seleccionar fecha inicial:', 
+            value=datos.primera_fecha,
+            min_value=datos.df_mediciones[datos.col_fechahora].min(),
+            max_value=datos.df_mediciones[datos.col_fechahora].max(),
+        )
+
+        datos.ultima_fecha = zona_fecha2.date_input(
+            'Seleccionar fecha final:', 
+            value=datos.ultima_fecha,
+            min_value=datos.df_mediciones[datos.col_fechahora].min(),
+            max_value=datos.df_mediciones[datos.col_fechahora].max(),
+        )
+
+        zona_minima, zona_maxima = st.columns(2)
+        datos.duracion_minima = zona_minima.slider(
+            "Duración mínima (minutos)", 
             min_value=int(datos.intervalo_mediciones), 
-            max_value=120, 
+            max_value=int(datos.duracion_maxima), 
             value=datos.duracion_minima,
-            step=int(datos.intervalo_mediciones)
+            step=int(datos.intervalo_mediciones),
+        )
+
+
+        datos.duracion_maxima = zona_maxima.slider(
+            "Duración maxima (minutos)", 
+            min_value=int(datos.duracion_minima), 
+            max_value=int(datos.duracion_tope), 
+            value=datos.duracion_maxima,
+            step=int(datos.intervalo_mediciones),
         )
 
         datos.pausa_maxima = st.slider(
