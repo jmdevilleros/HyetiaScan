@@ -341,7 +341,7 @@ class Precipitaciones:
         # Calcular los valores de percentiles a partir de porcentaje_acumulado de aguaceros
         # Usar intervalo expecificado como argumento de la función
         datos_huff['valores_percentiles'] = self.df_aguaceros['porcentaje_acumulado'].apply(
-            lambda p: np.percentile(p, range(0, 101, intervalo))
+            lambda p: np.percentile(p, range(intervalo, 101, intervalo))
         )
 
         # Calcular los valores de cuartiles a partir de porcentaje_acumulado de aguaceros
@@ -368,6 +368,12 @@ class Precipitaciones:
             {'valores_percentiles': lambda x: np.mean(list(zip(*x)), axis=1)}
         ).reset_index()
 
+        # Agregar un cero al principio de cada lista en 'valores_percentiles'
+        curvas_huff['valores_percentiles'] = curvas_huff['valores_percentiles'].apply(
+            lambda x: [0] + list(x)
+        )
+
+        # Agregar clasificacion de curva
         curvas_huff['Q'] = 'Q' + (curvas_huff['indice_mayor_delta'] + 1).astype(str)
         curvas_huff = curvas_huff.drop('indice_mayor_delta', axis=1)
 
