@@ -84,7 +84,7 @@ with st.expander('Parámetros.', expanded=True):
         datos.intensidad_minima = st.slider(
             'Seleccione la intensidad mínima de aguacero',
             min_value=1,
-            max_value=30,
+            max_value=50,
             value=datos.intensidad_minima,
             step=1,
         )
