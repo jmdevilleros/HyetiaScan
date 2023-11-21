@@ -36,42 +36,41 @@ def generar_piedepagina(datos):
 # ---------------------------------------------------------------------------------------------
 def seccion_graficar_aguaceros(datos):
     numero_aguaceros = datos.df_aguaceros.shape[0]
-    with st.expander('Curvas individuales de aguaceros', expanded=False):
-        if st.button(f'Calcular {numero_aguaceros} curvas', type='primary'):
-            barra_progreso = st.progress(0, '')
-            fig, ax = plt.subplots(figsize=(8, 6))
-            numero_aguaceros = datos.df_aguaceros.shape[0]
-            procesado = 0
-            for _, aguacero in datos.df_aguaceros.iterrows():
-                conteo = aguacero['conteo']
-                porcentaje_duracion = [(i + 1) / conteo * 100 for i in range(conteo)]
-                porcentaje_precipitacion = list(aguacero['porcentaje_acumulado'])
+    if st.button(f'Calcular {numero_aguaceros} curvas', type='primary'):
+        barra_progreso = st.progress(0, '')
+        fig, ax = plt.subplots(figsize=(8, 6))
+        numero_aguaceros = datos.df_aguaceros.shape[0]
+        procesado = 0
+        for _, aguacero in datos.df_aguaceros.iterrows():
+            conteo = aguacero['conteo']
+            porcentaje_duracion = [(i + 1) / conteo * 100 for i in range(conteo)]
+            porcentaje_precipitacion = list(aguacero['porcentaje_acumulado'])
 
-                ax.plot(porcentaje_duracion, porcentaje_precipitacion, linewidth=0.6)
+            ax.plot(porcentaje_duracion, porcentaje_precipitacion, linewidth=0.6)
 
-                procesado = procesado + 1
-                barra_progreso.progress(
-                    procesado/numero_aguaceros, 
-                    text=f'Curva {procesado} de {numero_aguaceros}'
-                )
-            barra_progreso.empty()
-
-            ax.set_xticks(range(0,101, 10))
-            ax.set_yticks(range(0,101, 10))
-            ax.grid(which='both', linestyle='--', linewidth=0.5)
-            ax.minorticks_on()
-            ax.grid(which='minor', linestyle=':', linewidth=0.5)
-            ax.set_xlabel('% duración')
-            ax.set_ylabel('% precipitación')
-
-            pie = generar_piedepagina(datos)
-            plt.text(100, 5, 
-                pie, fontsize=6, ha='right', 
-                bbox={'facecolor': 'white', 'alpha': 1, 'pad': 2}
+            procesado = procesado + 1
+            barra_progreso.progress(
+                procesado/numero_aguaceros, 
+                text=f'Curva {procesado} de {numero_aguaceros}'
             )
+        barra_progreso.empty()
 
-            plt.title(f'Curvas de aguaceros {datos.nombre}', fontsize=10)        
-            st.pyplot(fig)
+        ax.set_xticks(range(0,101, 10))
+        ax.set_yticks(range(0,101, 10))
+        ax.grid(which='both', linestyle='--', linewidth=0.5)
+        ax.minorticks_on()
+        ax.grid(which='minor', linestyle=':', linewidth=0.5)
+        ax.set_xlabel('% duración')
+        ax.set_ylabel('% precipitación')
+
+        pie = generar_piedepagina(datos)
+        plt.text(100, 5, 
+            pie, fontsize=6, ha='right', 
+            bbox={'facecolor': 'white', 'alpha': 1, 'pad': 2}
+        )
+
+        plt.title(f'Curvas de aguaceros {datos.nombre}', fontsize=10)        
+        st.pyplot(fig)
 
     return
 
@@ -124,75 +123,78 @@ def preparar_curva_frecuencia(ax, df, columna):
 
 # ---------------------------------------------------------------------------------------------
 def seccion_graficar_curvas_frecuencia(datos):
-    with st.expander('Curvas de frecuencia', expanded=False):
-        if datos.df_aguaceros.shape[0] <= 1:
-            st.warning('Se requieren dos o mas aguaceros para calcular frecuencias.')
-            return
-        
-        fig, (ax_duracion, ax_precipit) = plt.subplots(1, 2, figsize=(8, 4))
-        
-        preparar_curva_frecuencia(ax_duracion, datos.df_aguaceros, 'duracion')
-        preparar_curva_frecuencia(ax_precipit, datos.df_aguaceros, 'precipitacion_acumulada')
+    if datos.df_aguaceros.shape[0] <= 1:
+        st.warning('Se requieren dos o mas aguaceros para calcular frecuencias.')
+        return
+    
+    fig, (ax_duracion, ax_precipit) = plt.subplots(1, 2, figsize=(8, 4))
+    
+    preparar_curva_frecuencia(ax_duracion, datos.df_aguaceros, 'duracion')
+    preparar_curva_frecuencia(ax_precipit, datos.df_aguaceros, 'precipitacion_acumulada')
 
-        fig.suptitle(f'Curvas de frecuencia {datos.nombre}', fontsize=10, ha='center')
-        pie = generar_piedepagina(datos)
-        plt.text(-10, -25, 
-            pie, fontsize=6, ha='center', 
-            bbox={'facecolor': 'white', 'alpha': 1, 'pad': 2}
-        )
-        st.pyplot(fig)
+    fig.suptitle(f'Curvas de frecuencia {datos.nombre}', fontsize=10, ha='center')
+    pie = generar_piedepagina(datos)
+    plt.text(-10, -25, 
+        pie, fontsize=6, ha='center', 
+        bbox={'facecolor': 'white', 'alpha': 1, 'pad': 2}
+    )
+    st.pyplot(fig)
 
     return
 
 # ---------------------------------------------------------------------------------------------
 def seccion_graficar_curvas_huff(datos):
-    with st.expander('Curvas de Huff', expanded=False):
-        intervalo_percentiles = st.select_slider(
-            'Seleccione intervalo de percentiles Huff',
-            options=[5, 10, 20, 25, 50],
-            value=10,
+    intervalo_percentiles = st.select_slider(
+        'Seleccione intervalo de percentiles Huff',
+        options=[5, 10, 20, 25, 50],
+        value=10,
+    )
+
+    curvas_huff = datos.calcular_curvas_huff(intervalo=intervalo_percentiles)
+    valores_eje_x = range(0, 101, intervalo_percentiles)
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+    marcas = "vDo^"
+    for indice, curva in curvas_huff.iterrows():
+        ax.plot(
+            valores_eje_x,
+            list(curva['valores_percentiles']),
+            label=curva['Q'],
+            marker=marcas[indice]
         )
 
-        curvas_huff = datos.calcular_curvas_huff(intervalo=intervalo_percentiles)
-        valores_eje_x = range(0, 101, intervalo_percentiles)
+    ax.set_xticks(range(0, 101, intervalo_percentiles))
+    ax.set_yticks(range(0, 101, 5))
 
-        fig, ax = plt.subplots(figsize=(8, 6))
-        marcas = "vDo^"
-        for indice, curva in curvas_huff.iterrows():
-            ax.plot(
-                valores_eje_x,
-                list(curva['valores_percentiles']),
-                label=curva['Q'],
-                marker=marcas[indice]
-            )
+    ax.grid(which='both', linestyle='--', linewidth=0.5)
+    ax.grid(which='minor', linestyle=':', linewidth=0.5)
 
-        ax.set_xticks(range(0, 101, intervalo_percentiles))
-        ax.set_yticks(range(0, 101, 5))
+    ax.set_xlabel('% duración')
+    ax.set_ylabel('% precipitación')
+    ax.legend()
 
-        ax.grid(which='both', linestyle='--', linewidth=0.5)
-        ax.grid(which='minor', linestyle=':', linewidth=0.5)
+    plt.title(f'Curvas de Huff {datos.nombre}', fontsize=10)
+    pie = generar_piedepagina(datos)
+    plt.text(100, 5, 
+        pie, fontsize=6, ha='right', 
+        bbox={'facecolor': 'white', 'alpha': 1, 'pad': 2}
+    )
 
-        ax.set_xlabel('% duración')
-        ax.set_ylabel('% precipitación')
-        ax.legend()
+    st.pyplot(fig)
 
-        plt.title(f'Curvas de Huff {datos.nombre}', fontsize=10)
-        pie = generar_piedepagina(datos)
-        plt.text(100, 5, 
-            pie, fontsize=6, ha='right', 
-            bbox={'facecolor': 'white', 'alpha': 1, 'pad': 2}
+    if st.toggle('Ver valores percentiles'):
+        curvas_huff['valores_percentiles'] = curvas_huff['valores_percentiles'].apply(
+            lambda x: [round(i, 2) for i in x]
         )
-
-        st.pyplot(fig)
-
-        if st.toggle('Ver valores percentiles'):
-            curvas_huff['valores_percentiles'] = curvas_huff['valores_percentiles'].apply(
-                lambda x: [round(i, 2) for i in x]
-            )
-            st.dataframe(curvas_huff, column_order=('Q', 'valores_percentiles'), hide_index=True)
+        st.dataframe(curvas_huff, column_order=('Q', 'valores_percentiles'), hide_index=True)
 
     return
 
+# ---------------------------------------------------------------------------------------------
+def secccion_graficar_histogramas_huff(datos):
+    st.write('TODO')
+
+    return
 
 # =============================================================================================
 # Sección principal
@@ -215,6 +217,16 @@ if datos.df_aguaceros is None:
     st.error(f'No hay datos de aguaceros para graficar.')
     st.stop()
 
-seccion_graficar_curvas_huff(datos)
-seccion_graficar_curvas_frecuencia(datos)
-seccion_graficar_aguaceros(datos)
+# Definir secciones con gráficos disponibles
+secciones = {
+    'Curvas de Huff'       : seccion_graficar_curvas_huff,
+    'Histogramas Huff'     : secccion_graficar_histogramas_huff,
+    'Curvas de frecuencia' : seccion_graficar_curvas_frecuencia,
+    'Curvas de aguaceros'  : seccion_graficar_aguaceros,
+}
+
+# Mostrar secciones
+for titulo, seccion in secciones.items():
+    with st.expander(titulo, expanded=False):
+        seccion(datos)
+        
