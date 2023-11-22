@@ -287,9 +287,6 @@ class Precipitaciones:
         # Agregar conteo de mediciones
         df['conteo'] = df['mediciones'].apply(len)
 
-        # Calcular y agregar porcentaje acumulado de mediciones
-        df['porcentaje_acumulado'] = df['mediciones'].apply(calcular_acumulados)
-        
         # Filtrar precipitaciones por duración
         df = df[
             (df['duracion'] >= self.duracion_minima) & \
@@ -300,11 +297,18 @@ class Precipitaciones:
         # Filtrar por intensidad minima
         df = df[(df['intensidad'] >= self.intensidad_minima)]
 
+        # Calcular y agregar porcentaje acumulado de mediciones
+        df['porcentaje_acumulado'] = df['mediciones'].apply(calcular_acumulados)
+
+        # Calcular y agregar cuartil de Huff
+        df['Q_Huff'] = \
+            df['porcentaje_acumulado'].apply(self.determinar_cuartil_huff)
+        
         # Reordenar columnas
         df = df[[
             'inicia', 'termina', 'duracion', 
             'intensidad', 'precipitacion_acumulada', 'conteo', 
-            'mediciones', 'porcentaje_acumulado',
+            'mediciones', 'porcentaje_acumulado', 'Q_Huff',
         ]]
 
         self.df_aguaceros = df.reset_index(drop=True)
@@ -372,8 +376,7 @@ class Precipitaciones:
         )
 
         # Determinar cuartil de cada curva
-        datos_huff['Q'] = \
-            self.df_aguaceros['porcentaje_acumulado'].apply(self.determinar_cuartil_huff)
+        datos_huff['Q'] = self.df_aguaceros['Q_Huff']
 
         # Calcular curvas Huff como promedio de cada correspondiente valor de valores_percentiles
         curvas_huff = datos_huff.groupby('Q').agg(

@@ -134,8 +134,8 @@ def seccion_graficar_curvas_frecuencia(datos):
 
     fig.suptitle(f'Curvas de frecuencia {datos.nombre}', fontsize=10, ha='center')
     pie = generar_piedepagina(datos)
-    plt.text(-10, -25, 
-        pie, fontsize=6, ha='center', 
+    plt.text(-10, -20, 
+        pie, fontsize=5, ha='center', 
         bbox={'facecolor': 'white', 'alpha': 1, 'pad': 2}
     )
     st.pyplot(fig)
@@ -192,8 +192,7 @@ def seccion_graficar_curvas_huff(datos):
 
 # ---------------------------------------------------------------------------------------------
 def secccion_graficar_histogramas_huff(datos):
-    st.write('TODO')
-
+    
     return
 
 # =============================================================================================
@@ -229,4 +228,3 @@ secciones = {
 for titulo, seccion in secciones.items():
     with st.expander(titulo, expanded=False):
         seccion(datos)
-        
