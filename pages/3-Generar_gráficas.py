@@ -16,6 +16,8 @@
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
+from math import floor, ceil, trunc
+from pandas import cut
 
 
 # =============================================================================================
@@ -192,6 +194,55 @@ def seccion_graficar_curvas_huff(datos):
 
 # ---------------------------------------------------------------------------------------------
 def secccion_graficar_histogramas_huff(datos):
+    
+    num_aguaceros = datos.df_aguaceros.shape[0]
+    if num_aguaceros <= 2:
+        st.error('Requiere mas de dos aguaceros.')
+        return
+
+    intensidad_min = floor(datos.df_aguaceros['intensidad'].min())
+    intensidad_max = ceil(datos.df_aguaceros['intensidad'].max())
+
+    if intensidad_min == intensidad_max:
+        st.error('No hay diferencia de intensidades')
+        return
+    
+    num_rangos = st.slider(
+        'Número de rangos:', 
+        min_value=2, 
+        max_value=intensidad_max
+    )
+    tamaño_rango = (intensidad_max - intensidad_min) / num_rangos
+    limites_rangos = \
+        [trunc(intensidad_min + i * tamaño_rango) for i in range(num_rangos + 1)]
+    rangos = \
+        [(limites_rangos[i], limites_rangos[i + 1]) for i in range(num_rangos)]
+
+    st.write('min:', intensidad_min)
+    st.write('max:', intensidad_max)
+    st.write(' '.join(map(str, limites_rangos)))
+    st.write(', '.join(map(str, rangos)))
+
+    df = datos.df_aguaceros[['Q_Huff', 'intensidad']].copy()
+
+    df['rango'] = cut(
+        datos.df_aguaceros['intensidad'], 
+        bins=limites_rangos,
+        labels=[f'{t}' for t in rangos],
+    )
+
+    st.dataframe(df)
+
+    conteo_por_categoria = df.groupby(['Q_Huff', 'rango'], observed=False).size()
+    st.write(conteo_por_categoria)
+    
+    fig, ax = plt.subplots(figsize=(8, 6))
+    ax.tick_params(axis='x',labelsize=6)
+
+    ax.hist(df[['Q_Huff']])
+    ax.hist(df[['rango']])
+
+    st.pyplot(fig)
 
     return
 
