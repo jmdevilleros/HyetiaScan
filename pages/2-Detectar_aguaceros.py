@@ -96,5 +96,9 @@ if aplicar_parametros:
 
 if datos.df_aguaceros is not None:
     st.write('**Aguaceros detectados:**')
-    st.table(datos.df_aguaceros.describe())
+    st.write(
+        'Estadísticas:',
+        datos.df_aguaceros.describe(include='all')
+    )
+    st.write('Datos:')
     st.dataframe(datos.df_aguaceros)
