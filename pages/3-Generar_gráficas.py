@@ -233,7 +233,7 @@ def seccion_graficar_rangos_intensidad(datos):
     categorias = df['Q_Huff'].unique()
     categorias.sort()
     
-    fig, ax = plt.subplots(figsize=(8, 6))
+    fig, ax = plt.subplots(figsize=(7, 4))
     colores = ['lightblue', 'cyan', 'blue', 'navy']
     for i, categoria in enumerate(categorias):
         ax.bar(
@@ -244,7 +244,7 @@ def seccion_graficar_rangos_intensidad(datos):
             color=colores[i]
         )
 
-    ax.legend(loc='upper left', bbox_to_anchor=(1, 1))
+    ax.legend(title='Cuartil', loc='upper left', bbox_to_anchor=(1, 1))
     ax.set_xticks(range(num_rangos))
     ax.set_xticklabels(rangos, rotation=45, fontsize=8)
     ax.set_xlabel('Rangos de intensidad')
@@ -253,11 +253,13 @@ def seccion_graficar_rangos_intensidad(datos):
     ax.grid(which='minor', linestyle=':', linewidth=0.5, axis='y')
 
     pie = generar_piedepagina(datos)
-    plt.gcf().text(1, 0.5, 
-        pie, fontsize=6, ha='center', 
+    plt.gcf().text(1, 0.3, 
+        pie, fontsize=5, ha='center', 
         bbox={'facecolor': 'white', 'alpha': 1, 'pad': 2}
     )
-    plt.title('Distribución de rangos de intensidad por cuartil Huff')
+    plt.title(
+        f'Distribución rangos de intensidad por cuartil Huff\n{datos.nombre}',
+    )
 
     st.pyplot(fig)
 
