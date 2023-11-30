@@ -16,6 +16,7 @@
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 from math import floor, ceil, trunc
 from pandas import cut
 
@@ -136,7 +137,8 @@ def seccion_graficar_curvas_frecuencia(datos):
 
     fig.suptitle(f'Curvas de frecuencia {datos.nombre}', fontsize=10, ha='center')
     pie = generar_piedepagina(datos)
-    plt.text(-10, -20, 
+    
+    plt.gcf().text(0.5, -0.125, 
         pie, fontsize=5, ha='center', 
         bbox={'facecolor': 'white', 'alpha': 1, 'pad': 2}
     )
@@ -193,7 +195,7 @@ def seccion_graficar_curvas_huff(datos):
     return
 
 # ---------------------------------------------------------------------------------------------
-def secccion_graficar_histogramas_huff(datos):
+def seccion_graficar_rangos_intensidad(datos):
     
     num_aguaceros = datos.df_aguaceros.shape[0]
     if num_aguaceros <= 2:
@@ -202,6 +204,7 @@ def secccion_graficar_histogramas_huff(datos):
 
     intensidad_min = floor(datos.df_aguaceros['intensidad'].min())
     intensidad_max = ceil(datos.df_aguaceros['intensidad'].max())
+    intensidad_med = (intensidad_max - intensidad_min) // 2
 
     if intensidad_min == intensidad_max:
         st.error('No hay diferencia de intensidades')
@@ -210,18 +213,13 @@ def secccion_graficar_histogramas_huff(datos):
     num_rangos = st.slider(
         'Número de rangos:', 
         min_value=2, 
-        max_value=intensidad_max
+        max_value=intensidad_med
     )
     tamaño_rango = (intensidad_max - intensidad_min) / num_rangos
     limites_rangos = \
         [trunc(intensidad_min + i * tamaño_rango) for i in range(num_rangos + 1)]
     rangos = \
         [(limites_rangos[i], limites_rangos[i + 1]) for i in range(num_rangos)]
-
-    st.write('min:', intensidad_min)
-    st.write('max:', intensidad_max)
-    st.write(' '.join(map(str, limites_rangos)))
-    st.write(', '.join(map(str, rangos)))
 
     df = datos.df_aguaceros[['Q_Huff', 'intensidad']].copy()
 
@@ -231,16 +229,35 @@ def secccion_graficar_histogramas_huff(datos):
         labels=[f'{t}' for t in rangos],
     )
 
-    st.dataframe(df)
-
     conteo_por_categoria = df.groupby(['Q_Huff', 'rango'], observed=False).size()
-    st.write(conteo_por_categoria)
+    categorias = df['Q_Huff'].unique()
+    categorias.sort()
     
     fig, ax = plt.subplots(figsize=(8, 6))
-    ax.tick_params(axis='x',labelsize=6)
+    colores = ['lightblue', 'cyan', 'blue', 'navy']
+    for i, categoria in enumerate(categorias):
+        ax.bar(
+            [p + i * 0.15 for p in range(num_rangos)], 
+            conteo_por_categoria.loc[categoria],
+            width=0.15,
+            label=categoria,
+            color=colores[i]
+        )
 
-    ax.hist(df[['Q_Huff']])
-    ax.hist(df[['rango']])
+    ax.legend(loc='upper left', bbox_to_anchor=(1, 1))
+    ax.set_xticks(range(num_rangos))
+    ax.set_xticklabels(rangos, rotation=45, fontsize=8)
+    ax.set_xlabel('Rangos de intensidad')
+    ax.set_ylabel('Frecuencia')
+    ax.grid(which='both', linestyle='--', linewidth=0.5, axis='y')
+    ax.grid(which='minor', linestyle=':', linewidth=0.5, axis='y')
+
+    pie = generar_piedepagina(datos)
+    plt.gcf().text(1, 0.5, 
+        pie, fontsize=6, ha='center', 
+        bbox={'facecolor': 'white', 'alpha': 1, 'pad': 2}
+    )
+    plt.title('Distribución de rangos de intensidad por cuartil Huff')
 
     st.pyplot(fig)
 
@@ -270,7 +287,7 @@ if datos.df_aguaceros is None:
 # Definir secciones con gráficos disponibles
 secciones = {
     'Curvas de Huff'       : seccion_graficar_curvas_huff,
-    'Histogramas Huff'     : secccion_graficar_histogramas_huff,
+    'Rangos de intensidad' : seccion_graficar_rangos_intensidad,
     'Curvas de frecuencia' : seccion_graficar_curvas_frecuencia,
     'Curvas de aguaceros'  : seccion_graficar_aguaceros,
 }
