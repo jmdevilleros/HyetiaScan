@@ -1,5 +1,5 @@
 *************************************************************************
-# HyetiaScan 1.01
+# HyetiaScan 1.1
 
 Análisis de lluvias, detección de aguaceros y gráficos de curvas de Huff
 
@@ -27,3 +27,4 @@ Gráficas disponibles:
 - Curva de aguaceros (% duración vs % precipitación)
 - Curvas de frecuencia
 - Curvas de Huff
+- Rangos de intensidad

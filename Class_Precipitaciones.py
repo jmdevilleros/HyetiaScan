@@ -287,9 +287,6 @@ class Precipitaciones:
         # Agregar conteo de mediciones
         df['conteo'] = df['mediciones'].apply(len)
 
-        # Calcular y agregar porcentaje acumulado de mediciones
-        df['porcentaje_acumulado'] = df['mediciones'].apply(calcular_acumulados)
-        
         # Filtrar precipitaciones por duración
         df = df[
             (df['duracion'] >= self.duracion_minima) & \
@@ -300,11 +297,18 @@ class Precipitaciones:
         # Filtrar por intensidad minima
         df = df[(df['intensidad'] >= self.intensidad_minima)]
 
+        # Calcular y agregar porcentaje acumulado de mediciones
+        df['porcentaje_acumulado'] = df['mediciones'].apply(calcular_acumulados)
+
+        # Calcular y agregar cuartil de Huff
+        df['Q_Huff'] = \
+            df['porcentaje_acumulado'].apply(self.determinar_cuartil_huff)
+        
         # Reordenar columnas
         df = df[[
             'inicia', 'termina', 'duracion', 
             'intensidad', 'precipitacion_acumulada', 'conteo', 
-            'mediciones', 'porcentaje_acumulado',
+            'mediciones', 'porcentaje_acumulado', 'Q_Huff',
         ]]
 
         self.df_aguaceros = df.reset_index(drop=True)
@@ -335,36 +339,47 @@ class Precipitaciones:
         return df
 
     # ---------------------------------------------------------------------------------------------
+    def determinar_cuartil_huff(self, acumulados):
+        
+        # Calcular valor de cuartiles
+        Q = np.percentile(acumulados, [25, 50, 75]).tolist()
+
+        # Calcula las diferencias entre los cuartiles
+        deltas = [
+            Q[0], 
+            Q[1] - Q[0], 
+            Q[2] - Q[1], 
+            100  - Q[2]
+        ]
+
+        # Calcular el índice del mayor delta para usarlo como clasificacion de tipo de curva Huff
+        # El mayor delta indica que en ese lapso el aguacero tuvo su mayor precipitación
+        # enumerate genera tuplas (indice, valor), key indica que max debe 
+        # comparar por el segundo item de la tupla (x[1]), el valor que retorna 
+        # max es una tupla (indice, valor mayor) asi que extraemos el
+        # primer elemento [0], el del indice, para usarlo como categoria de cuartil
+        indice_mayor_delta = max(enumerate(deltas), key=lambda x: x[1])[0]
+
+        # Nombre del cuartil calculado. Empiezan en cero, el nombre debe empezar en 1
+        Qname = f"Q{indice_mayor_delta + 1}"
+
+        return Qname
+
+    # ---------------------------------------------------------------------------------------------
     def calcular_curvas_huff(self, intervalo=5):
         datos_huff = pd.DataFrame()
 
-        # Calcular los valores de percentiles a partir de porcentaje_acumulado de aguaceros
-        # Usar intervalo expecificado como argumento de la función
+        # Generar percentiles a partir de porcentaje_acumulado de aguaceros
+        # Usar intervalo especificado como argumento de la función
         datos_huff['valores_percentiles'] = self.df_aguaceros['porcentaje_acumulado'].apply(
             lambda p: np.percentile(p, range(intervalo, 101, intervalo))
         )
 
-        # Calcular los valores de cuartiles a partir de porcentaje_acumulado de aguaceros
-        datos_huff['valores_cuartiles'] = self.df_aguaceros['porcentaje_acumulado'].apply(
-            lambda p: np.percentile(p, [25, 50, 75]).tolist()
-        )
-        # Calcula las diferencias entre los cuartiles
-        datos_huff['deltas_cuartiles'] = datos_huff['valores_cuartiles'].apply(
-            lambda p: [p[0], p[1] - p[0], p[2] - p[1], 100 - p[2]]
-        )
-
-        # Calcula el índice del mayor delta para usarlo como clasificacion de tipo de curva Huff
-        # El mayor delta indica que en ese lapso el aguacero tuvo su mayor precipitación
-        datos_huff['indice_mayor_delta'] = datos_huff['deltas_cuartiles'].apply(
-            # enumerate genera tuplas (indice, valor), key indica que max debe 
-            # comparar por el segundo item de la tupla (x[1]), el valor que retorna 
-            # max es una tupla (indice, valor mayor) asi que extraemos el
-            # primer elemento [0], el del indice, para usarlo como categoria de cuartil
-            lambda deltas: max(enumerate(deltas), key=lambda x: x[1])[0]
-        )
+        # Determinar cuartil de cada curva
+        datos_huff['Q'] = self.df_aguaceros['Q_Huff']
 
         # Calcular curvas Huff como promedio de cada correspondiente valor de valores_percentiles
-        curvas_huff = datos_huff.groupby('indice_mayor_delta').agg(
+        curvas_huff = datos_huff.groupby('Q').agg(
             {'valores_percentiles': lambda x: np.mean(list(zip(*x)), axis=1)}
         ).reset_index()
 
@@ -372,9 +387,5 @@ class Precipitaciones:
         curvas_huff['valores_percentiles'] = curvas_huff['valores_percentiles'].apply(
             lambda x: [0] + list(x)
         )
-
-        # Agregar clasificacion de curva
-        curvas_huff['Q'] = 'Q' + (curvas_huff['indice_mayor_delta'] + 1).astype(str)
-        curvas_huff = curvas_huff.drop('indice_mayor_delta', axis=1)
 
         return curvas_huff
