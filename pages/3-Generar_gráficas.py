@@ -16,7 +16,6 @@
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.cm as cm
 from math import floor, ceil, trunc
 from pandas import cut
 
@@ -77,8 +76,7 @@ def seccion_graficar_aguaceros(datos):
 
     return
 
-# ---------------------------------------------------------------------------------------------
-def calcular_punto_inflexion(valores_x, valores_y):
+
     if len(valores_y) <= 1:
         return None
     
@@ -97,27 +95,25 @@ def calcular_punto_inflexion(valores_x, valores_y):
 
 # ---------------------------------------------------------------------------------------------
 def preparar_curva_frecuencia(ax, df, columna):
+
+    # Curva general
     valores       = df[[columna]].sort_values(columna, ascending=False)
     num_valores   = valores.shape[0]
-    porcentajes_x = [(i+1)/num_valores * 100 for i in range(num_valores)]
+    porcentajes_x = [(i + 1) / num_valores * 100 for i in range(num_valores)]
+    ax.plot(porcentajes_x, valores, label='General', linestyle='-', linewidth=1.2)
 
-    # Curva
-    ax.plot(porcentajes_x, valores)
-
-    # Punto de inflexión (Si lo hay)
-    xy_inflexion = calcular_punto_inflexion(porcentajes_x, valores[columna].to_numpy())
-    if xy_inflexion is not None:
-        ax.plot(xy_inflexion[0], xy_inflexion[1], 'ro', markersize=3)
-        ax.text(
-            xy_inflexion[0] + 3, xy_inflexion[1] + 3,
-            f'Punto de Inflexión f\':\n({xy_inflexion[0]:.2f}, {xy_inflexion[1]:.2f})', 
-            fontsize=6, 
-            bbox={'facecolor': 'white', 'alpha': 1, 'pad': 1, 'linewidth': 0.5}
-        )
+    # Curvas por categoría Huff
+    categorias = df['Q_Huff'].unique()
+    categorias.sort()
+    for categoria in categorias:
+        valores       = df[df['Q_Huff'] == categoria][[columna]].sort_values(columna, ascending=False)
+        num_valores   = valores.shape[0]
+        porcentajes_x = [(i + 1) / num_valores * 100 for i in range(num_valores)]
+        ax.plot(porcentajes_x, valores, label=categoria, linewidth=0.9, linestyle='-.')
 
     ax.set_ylabel(columna.capitalize())
     ax.set_xlabel('Probabilidad')
-
+    ax.legend(fontsize=8)
     ax.grid(which='both', linestyle='--', linewidth=0.5)
     ax.minorticks_on()
     ax.grid(which='minor', linestyle=':', linewidth=0.5)
