@@ -131,8 +131,8 @@ class Precipitaciones:
             {col_fechahora : fechashoras, col_precipitacion : precipitaciones}
         )
 
-        self.primera_fecha = self.df_mediciones[self.col_fechahora].min()
-        self.ultima_fecha  = self.df_mediciones[self.col_fechahora].max()
+        #self.primera_fecha = self.df_mediciones[self.col_fechahora].min()
+        #self.ultima_fecha  = self.df_mediciones[self.col_fechahora].max()
 
         return True, None
 

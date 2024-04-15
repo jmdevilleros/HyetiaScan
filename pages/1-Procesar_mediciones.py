@@ -114,11 +114,17 @@ salida_intervalo.caption(
     f'Intervalo entre mediciones: [ :orange[{datos.intervalo_mediciones}] ] minutos'
 )
 if datos.df_eventos is not None:
+
     salida_estado.success('Estado: Procesadas.')
 elif num_lagunas > 0:
     salida_estado.error((f'{num_lagunas} lagunas detectadas.'))
 else:
     salida_estado.warning('Estado: No procesadas.')
+
+# Si se calcularon los eventos exitosamente, reinicializar rango de fechas válidas
+if datos.df_eventos is not None:
+    datos.primera_fecha = datos.df_mediciones[datos.col_fechahora].min()
+    datos.ultima_fecha  = datos.df_mediciones[datos.col_fechahora].max()
 
 # Ver eventos calculados
 if datos.df_eventos is not None:
