@@ -1,12 +1,12 @@
 *************************************************************************
-# HyetiaScan 1.1
+# HyetiaScan 1.1.1
 
 Análisis de lluvias, detección de aguaceros y gráficos de curvas de Huff
 
 - Juan Manuel de Villeros Arias
 - Mónica Liliana Gallego Jaramillo
 
-Noviembre/2023
+Abril/2024
 
 Contacto: hyetiascan@teoktonos.com
 *************************************************************************
