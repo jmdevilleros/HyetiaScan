@@ -261,6 +261,13 @@ def seccion_graficar_rangos_intensidad(datos):
 
     return
 
+# ---------------------------------------------------------------------------------------------
+def seccion_graficar_historico(datos):
+    st.line_chart(datos.df_aguaceros, x='inicia', y='duracion', color='#00FF00')
+    st.line_chart(datos.df_aguaceros, x='inicia', y='intensidad', color='#FFA500')
+    st.line_chart(datos.df_aguaceros, x='inicia', y='precipitacion_acumulada', color='#1E90FF')
+
+
 # =============================================================================================
 # Sección principal
 # =============================================================================================
@@ -284,10 +291,11 @@ if datos.df_aguaceros is None:
 
 # Definir secciones con gráficos disponibles
 secciones = {
-    'Curvas de Huff'       : seccion_graficar_curvas_huff,
-    'Rangos de intensidad' : seccion_graficar_rangos_intensidad,
-    'Curvas de frecuencia' : seccion_graficar_curvas_frecuencia,
-    'Curvas de aguaceros'  : seccion_graficar_aguaceros,
+    'Curvas de Huff'           : seccion_graficar_curvas_huff,
+    'Rangos de intensidad'     : seccion_graficar_rangos_intensidad,
+    'Curvas de frecuencia'     : seccion_graficar_curvas_frecuencia,
+    'Curvas Huff individuales' : seccion_graficar_aguaceros,
+    'Histórico de aguaceros'   : seccion_graficar_historico,
 }
 
 # Mostrar secciones
