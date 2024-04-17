@@ -194,7 +194,7 @@ class Precipitaciones:
         return num_lagunas, df_lagunas
 
     # -----------------------------------------------------------------------------------------
-    def rellenar_faltantes(self):
+    def rellenar_faltantes(self, valor_relleno=0):
         # Asumir valores <0 como mediciones faltantes
         self.df_mediciones = self.df_mediciones[self.df_mediciones[self.col_precipitacion] >= 0]
 
@@ -206,7 +206,7 @@ class Precipitaciones:
         timestamps_faltantes = rango_completo.difference(self.df_mediciones[self.col_fechahora])
         df_faltantes = pd.DataFrame(timestamps_faltantes, columns=[self.col_fechahora])
 
-        df_faltantes[self.col_precipitacion] = 0
+        df_faltantes[self.col_precipitacion] = valor_relleno
         self.df_mediciones = \
             pd.concat([self.df_mediciones, df_faltantes]).sort_values(by=self.col_fechahora)
 

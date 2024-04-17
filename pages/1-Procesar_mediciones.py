@@ -100,6 +100,7 @@ if (datos.df_mediciones is not None) & (datos.intervalo_mediciones is not None):
         st.write('**Manejo de lagunas:**')
         c1, c2, _, _ = st.columns(4)
         if c1.toggle('Ver detalle de lagunas?'):
+            st.line_chart(df_lagunas, x='inicia', y='duracion', color='#FF4500')
             st.dataframe(df_lagunas)
         if c2.toggle('Rellenar faltantes con CEROS?'):
             datos.rellenar_faltantes()
