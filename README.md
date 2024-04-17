@@ -1,5 +1,5 @@
 *************************************************************************
-# HyetiaScan 1.1.1
+# HyetiaScan 1.2
 
 Análisis de lluvias, detección de aguaceros y gráficos de curvas de Huff
 
@@ -23,7 +23,6 @@ Permite especificar criterios para establecer si una lluvia se convierte en agua
 - Intensidad
 
 Gráficas disponibles:
-
 - Curva de aguaceros (% duración vs % precipitación)
 - Curvas de frecuencia
 - Curvas de Huff

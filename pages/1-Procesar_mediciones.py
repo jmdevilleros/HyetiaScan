@@ -3,7 +3,6 @@
 # Análisis de lluvias, detección de aguaceros y gráficos de curvas de Huff
 # Juan Manuel de Villeros Arias
 # Mónica Liliana Gallego Jaramillo
-# Octubre-Noviembre de 2023
 #
 # Archivo: "1-Procesar_mediciones.py" - Elegir columnas y calcular eventos de precipitación
 # *********************************************************************************************
@@ -73,6 +72,7 @@ with salida3:
             index=busca_indice(lista_columnas, datos.col_precipitacion),
         )
         aplicar_cambios = st.form_submit_button('Procesar', type='primary')
+
 if salida2.toggle('Ver tipos?'):
     salida4.dataframe(datos.df_origen.dtypes, column_config={'': 'Columna', '0': 'Tipo'})
 
@@ -100,6 +100,7 @@ if (datos.df_mediciones is not None) & (datos.intervalo_mediciones is not None):
         st.write('**Manejo de lagunas:**')
         c1, c2, _, _ = st.columns(4)
         if c1.toggle('Ver detalle de lagunas?'):
+            st.line_chart(df_lagunas, x='inicia', y='duracion', color='#FF4500')
             st.dataframe(df_lagunas)
         if c2.toggle('Rellenar faltantes con CEROS?'):
             datos.rellenar_faltantes()
@@ -126,7 +127,11 @@ if datos.df_eventos is not None:
     datos.primera_fecha = datos.df_mediciones[datos.col_fechahora].min()
     datos.ultima_fecha  = datos.df_mediciones[datos.col_fechahora].max()
 
-# Ver eventos calculados
+# Visualizar mediciones?
+if st.toggle('Visualizar gráfico de mediciones?', disabled=datos.df_eventos is None):
+    st.line_chart(datos.agrupar_mediciones())
+
+# Ver eventos calculados?
 if datos.df_eventos is not None:
-    if st.toggle('Visualizar eventos?', disabled=datos.df_eventos is None):
+    if st.toggle('Visualizar tabla de eventos?', disabled=datos.df_eventos is None):
         st.dataframe(datos.df_eventos)

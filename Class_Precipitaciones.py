@@ -120,10 +120,10 @@ class Precipitaciones:
         precipitaciones = self._obtener_columna_precipitacion(col_precipitacion)
 
         if (fechashoras is None):
-            return False, col_fechahora + f': {msg}'
+            return False, f'columna fecha-hora: {msg}'
         
         if (precipitaciones is None):
-            return False, col_precipitacion
+            return False, 'columna de precipitación'
 
         self.col_fechahora = col_fechahora
         self.col_precipitacion = col_precipitacion
@@ -131,11 +131,18 @@ class Precipitaciones:
             {col_fechahora : fechashoras, col_precipitacion : precipitaciones}
         )
 
-        #self.primera_fecha = self.df_mediciones[self.col_fechahora].min()
-        #self.ultima_fecha  = self.df_mediciones[self.col_fechahora].max()
-
         return True, None
 
+    # -----------------------------------------------------------------------------------------
+    def agrupar_mediciones(self, df=None):
+        if (self.col_fechahora is None) or (self.col_precipitacion is None):
+            return None
+        
+        if df is None:
+            df = self.df_mediciones
+
+        return df.groupby(pd.Grouper(key=self.col_fechahora, freq='D')).sum()
+        
     # -----------------------------------------------------------------------------------------
     def calcular_intervalo_mediciones(self):
         # Iniciar asumiendo que no hay intervalo válido
@@ -187,7 +194,7 @@ class Precipitaciones:
         return num_lagunas, df_lagunas
 
     # -----------------------------------------------------------------------------------------
-    def rellenar_faltantes(self):
+    def rellenar_faltantes(self, valor_relleno=0):
         # Asumir valores <0 como mediciones faltantes
         self.df_mediciones = self.df_mediciones[self.df_mediciones[self.col_precipitacion] >= 0]
 
@@ -199,7 +206,7 @@ class Precipitaciones:
         timestamps_faltantes = rango_completo.difference(self.df_mediciones[self.col_fechahora])
         df_faltantes = pd.DataFrame(timestamps_faltantes, columns=[self.col_fechahora])
 
-        df_faltantes[self.col_precipitacion] = 0
+        df_faltantes[self.col_precipitacion] = valor_relleno
         self.df_mediciones = \
             pd.concat([self.df_mediciones, df_faltantes]).sort_values(by=self.col_fechahora)
 
