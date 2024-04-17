@@ -3,7 +3,6 @@
 # Análisis de lluvias, detección de aguaceros y gráficos de curvas de Huff
 # Juan Manuel de Villeros Arias
 # Mónica Liliana Gallego Jaramillo
-# Octubre-Noviembre de 2023
 #
 # Archivo: "1-Procesar_mediciones.py" - Elegir columnas y calcular eventos de precipitación
 # *********************************************************************************************
@@ -73,6 +72,7 @@ with salida3:
             index=busca_indice(lista_columnas, datos.col_precipitacion),
         )
         aplicar_cambios = st.form_submit_button('Procesar', type='primary')
+
 if salida2.toggle('Ver tipos?'):
     salida4.dataframe(datos.df_origen.dtypes, column_config={'': 'Columna', '0': 'Tipo'})
 

@@ -120,10 +120,10 @@ class Precipitaciones:
         precipitaciones = self._obtener_columna_precipitacion(col_precipitacion)
 
         if (fechashoras is None):
-            return False, col_fechahora + f': {msg}'
+            return False, f'columna fecha-hora: {msg}'
         
         if (precipitaciones is None):
-            return False, col_precipitacion
+            return False, 'columna de precipitación'
 
         self.col_fechahora = col_fechahora
         self.col_precipitacion = col_precipitacion
