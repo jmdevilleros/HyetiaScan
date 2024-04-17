@@ -21,7 +21,7 @@ class AppConfig:
     # -----------------------------------------------------------------------------------------
     def __init__(self):
         self.APPNAME = 'HyetiaScan'
-        self.VERSION = '1.1.1'
+        self.VERSION = '1.2'
 
     # -----------------------------------------------------------------------------------------
     def configurar_pagina(self, header=None, subheader=None):
@@ -36,7 +36,7 @@ class AppConfig:
                     - Juan Manuel de Villeros Arias
                     - Mónica Liliana Gallego Jaramillo
 
-                    Noviembre/2023
+                    Abril/2024
 
                     Contacto: hyetiascan@teoktonos.com
                 '''
