@@ -126,7 +126,11 @@ if datos.df_eventos is not None:
     datos.primera_fecha = datos.df_mediciones[datos.col_fechahora].min()
     datos.ultima_fecha  = datos.df_mediciones[datos.col_fechahora].max()
 
-# Ver eventos calculados
+# Visualizar mediciones?
+if st.toggle('Visualizar gráfico de mediciones?', disabled=datos.df_eventos is None):
+    st.line_chart(datos.agrupar_mediciones())
+
+# Ver eventos calculados?
 if datos.df_eventos is not None:
-    if st.toggle('Visualizar eventos?', disabled=datos.df_eventos is None):
+    if st.toggle('Visualizar tabla de eventos?', disabled=datos.df_eventos is None):
         st.dataframe(datos.df_eventos)

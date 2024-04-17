@@ -131,11 +131,18 @@ class Precipitaciones:
             {col_fechahora : fechashoras, col_precipitacion : precipitaciones}
         )
 
-        #self.primera_fecha = self.df_mediciones[self.col_fechahora].min()
-        #self.ultima_fecha  = self.df_mediciones[self.col_fechahora].max()
-
         return True, None
 
+    # -----------------------------------------------------------------------------------------
+    def agrupar_mediciones(self, df=None):
+        if (self.col_fechahora is None) or (self.col_precipitacion is None):
+            return None
+        
+        if df is None:
+            df = self.df_mediciones
+
+        return df.groupby(pd.Grouper(key=self.col_fechahora, freq='D')).sum()
+        
     # -----------------------------------------------------------------------------------------
     def calcular_intervalo_mediciones(self):
         # Iniciar asumiendo que no hay intervalo válido
