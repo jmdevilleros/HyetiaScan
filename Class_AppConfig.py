@@ -3,7 +3,7 @@
 # Análisis de lluvias, detección de aguaceros y gráficos de curvas de Huff
 # Juan Manuel de Villeros Arias
 # Mónica Liliana Gallego Jaramillo
-# Octubre-Noviembre de 2023
+# Abril 2024
 #
 # Archivo: AppConfig.py - Definición de clase para configuración de aplicación
 # *********************************************************************************************
@@ -21,7 +21,7 @@ class AppConfig:
     # -----------------------------------------------------------------------------------------
     def __init__(self):
         self.APPNAME = 'HyetiaScan'
-        self.VERSION = '1.2'
+        self.VERSION = '1.2.1'
 
     # -----------------------------------------------------------------------------------------
     def configurar_pagina(self, header=None, subheader=None):
