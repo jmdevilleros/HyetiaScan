@@ -88,7 +88,7 @@ if aplicar_cambios:
 # ************************************
 
 # Detectar intervalo
-if (datos.df_mediciones is not None) & (not datos.calcular_intervalo_mediciones()):
+if (datos.df_mediciones is not None) & (not datos.estimar_intervalo_mediciones()):
     salida_estado.error('Error en intervalo entre mediciones.')
     st.stop()
 

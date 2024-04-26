@@ -3,7 +3,7 @@
 # Análisis de lluvias, detección de aguaceros y gráficos de curvas de Huff
 # Juan Manuel de Villeros Arias
 # Mónica Liliana Gallego Jaramillo
-# Octubre-Noviembre de 2023
+# Abril 2024
 #
 # Archivo: Precipitaciones.py - Definición de clase para manejo de Precipitaciones de lluvia
 # *********************************************************************************************
@@ -63,13 +63,13 @@ class Precipitaciones:
 
         # ------------------------------------------------------------------------------------
         def extraer(mensaje_error):
-            # Extrae el valor fallido de fecha
-            failed_date_value = re.findall(r'\"(.*?)\"', mensaje_error)[0]
-
-            # Extrae la posición del valor fallido de fecha
-            position = re.findall(r'position (\d+)', mensaje_error)[0]
-
-            return failed_date_value, int(position)
+            buscar_fechas_fallidas = re.findall(r'\"(.*?)\"', mensaje_error)
+            if len(buscar_fechas_fallidas) > 0:
+                fecha_fallida = buscar_fechas_fallidas[0]
+                position = re.findall(r'position (\d+)', mensaje_error)[0]
+                return fecha_fallida, int(position)
+            else:
+                return mensaje_error, 0
 
         if nombre_columna is None:
             return None, 'Nombre vacío'
@@ -77,14 +77,14 @@ class Precipitaciones:
             return None, 'Columna inexistente'
         tipo_columna = self.df_origen[nombre_columna].dtype
         if tipo_columna not in  ['object', 'datetime64']:
-            return None, f'Tipo {tipo_columna} desconocido'
+            return None, f'Tipo {tipo_columna} no compatible con fecha-hora'
 
         try:
             columna = pd.to_datetime(self.df_origen[nombre_columna])
             return columna, ''
         except ValueError as ve:
             val, pos = extraer(str(ve))
-            return None, f'{val} en posición {pos}'
+            return None, f'{val} en registro {pos}'
         except Exception as e:
             return None, str(e)
 
@@ -144,7 +144,7 @@ class Precipitaciones:
         return df.groupby(pd.Grouper(key=self.col_fechahora, freq='D')).sum()
         
     # -----------------------------------------------------------------------------------------
-    def calcular_intervalo_mediciones(self):
+    def estimar_intervalo_mediciones(self):
         # Iniciar asumiendo que no hay intervalo válido
         self.intervalo_mediciones = None
 
@@ -159,14 +159,21 @@ class Precipitaciones:
         if not es_intervalo_detectable:
             return False
         
-        t0 = self.df_mediciones.iloc[0][self.col_fechahora]
-        t1 = self.df_mediciones.iloc[1][self.col_fechahora]
-        detectado = (t1 - t0).seconds / 60
+        # Intenta calcular intervalo con la moda de los delta_t entre los primeros registros
+        try:
+            s_delta_t = pd.to_timedelta(
+                self.df_mediciones[self.col_fechahora].head(1000).diff().fillna(0)
+            )
+            intervalo = s_delta_t.mode()[0]
+            detectado = intervalo.total_seconds() / 60
+        except:
+            return False
 
         if detectado <= 0:
             return False
 
         self.intervalo_mediciones = detectado
+
         return True
 
     # -----------------------------------------------------------------------------------------

@@ -59,7 +59,7 @@ with st.expander('Parámetros.', expanded=True):
         datos.duracion_minima = zona_minima.slider(
             "Duración mínima (minutos)", 
             min_value=int(datos.intervalo_mediciones), 
-            max_value=int(datos.duracion_maxima), 
+            max_value=int(datos.duracion_maxima) - int(datos.intervalo_mediciones), 
             value=datos.duracion_minima,
             step=int(datos.intervalo_mediciones),
         )

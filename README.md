@@ -1,5 +1,5 @@
 *************************************************************************
-# HyetiaScan 1.2
+# HyetiaScan 1.2.1
 
 Análisis de lluvias, detección de aguaceros y gráficos de curvas de Huff
 
@@ -17,7 +17,6 @@ al menos una columna de fecha/hora (datetime) y al menos una columna
 numérica de precipitación.
 
 Permite especificar criterios para establecer si una lluvia se convierte en aguacero según:
-- Rango de fechas (Nuevo en v1.01)
 - Duración total
 - Continuidad (pausas breves entre eventos de precipitación)
 - Intensidad
