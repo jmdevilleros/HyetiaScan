@@ -144,7 +144,7 @@ class Precipitaciones:
         return df.groupby(pd.Grouper(key=self.col_fechahora, freq='D')).sum()
         
     # -----------------------------------------------------------------------------------------
-    def calcular_intervalo_mediciones(self):
+    def estimar_intervalo_mediciones(self):
         # Iniciar asumiendo que no hay intervalo válido
         self.intervalo_mediciones = None
 
@@ -159,14 +159,21 @@ class Precipitaciones:
         if not es_intervalo_detectable:
             return False
         
-        t0 = self.df_mediciones.iloc[0][self.col_fechahora]
-        t1 = self.df_mediciones.iloc[1][self.col_fechahora]
-        detectado = (t1 - t0).seconds / 60
+        # Intenta calcular intervalo con la moda de los delta_t entre los primeros registros
+        try:
+            s_delta_t = pd.to_timedelta(
+                self.df_mediciones[self.col_fechahora].head(1000).diff().fillna(0)
+            )
+            intervalo = s_delta_t.mode()[0]
+            detectado = intervalo.total_seconds() / 60
+        except:
+            return False
 
         if detectado <= 0:
             return False
 
         self.intervalo_mediciones = detectado
+
         return True
 
     # -----------------------------------------------------------------------------------------
