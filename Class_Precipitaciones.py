@@ -134,14 +134,20 @@ class Precipitaciones:
         return True, None
 
     # -----------------------------------------------------------------------------------------
-    def agrupar_mediciones(self, df=None):
+    def agrupar_mediciones(self, df=None, frecuencia="D"):
         if (self.col_fechahora is None) or (self.col_precipitacion is None):
             return None
         
         if df is None:
             df = self.df_mediciones
+        
+        frecuencias_validas = ['D', 'W', 'M', 'A'] 
+        if frecuencia not in frecuencias_validas:
+            frecuencia = 'D'
 
-        return df.groupby(pd.Grouper(key=self.col_fechahora, freq='D')).sum()
+        agrupacion = pd.Grouper(key=self.col_fechahora, freq=frecuencia)
+        funcion_agregacion = {self.col_precipitacion: 'sum'}  # Diccionario para la función de agregación
+        return df.groupby(agrupacion).agg(funcion_agregacion)
         
     # -----------------------------------------------------------------------------------------
     def estimar_intervalo_mediciones(self):
