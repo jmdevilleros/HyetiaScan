@@ -130,7 +130,7 @@ if datos.df_eventos is not None:
 # Visualizar mediciones?
 if st.toggle('Visualizar gráfico de mediciones?', disabled=datos.df_eventos is None):
     frecuencia = st.select_slider(
-        'Frecuencia de acumulación', options=['h', 'D', 'W', 'ME', 'YE'] , value='ME'
+        'Frecuencia de acumulación', options=['min', 'h', 'D', 'W', 'ME', 'YE']  , value='ME'
     )
     st.line_chart(datos.agrupar_mediciones(frecuencia=frecuencia))
 
