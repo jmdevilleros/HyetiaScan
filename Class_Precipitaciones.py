@@ -134,14 +134,20 @@ class Precipitaciones:
         return True, None
 
     # -----------------------------------------------------------------------------------------
-    def agrupar_mediciones(self, df=None):
+    def agrupar_mediciones(self, df=None, frecuencia="D"):
         if (self.col_fechahora is None) or (self.col_precipitacion is None):
             return None
         
         if df is None:
             df = self.df_mediciones
+        
+        frecuencias_validas = ['min', 'h', 'D', 'W', 'ME', 'YE'] 
+        if frecuencia not in frecuencias_validas:
+            frecuencia = 'D'
 
-        return df.groupby(pd.Grouper(key=self.col_fechahora, freq='D')).sum()
+        agrupacion = pd.Grouper(key=self.col_fechahora, freq=frecuencia)
+        funcion_agregacion = {self.col_precipitacion: 'sum'}  
+        return df.groupby(agrupacion).agg(funcion_agregacion)
         
     # -----------------------------------------------------------------------------------------
     def estimar_intervalo_mediciones(self):
@@ -208,7 +214,7 @@ class Precipitaciones:
         rango_completo = pd.date_range(
             start=self.df_mediciones[self.col_fechahora].min(), 
             end=self.df_mediciones[self.col_fechahora].max(), 
-            freq=f'{self.intervalo_mediciones}T'
+            freq=f'{self.intervalo_mediciones}min'
         )
         timestamps_faltantes = rango_completo.difference(self.df_mediciones[self.col_fechahora])
         df_faltantes = pd.DataFrame(timestamps_faltantes, columns=[self.col_fechahora])
