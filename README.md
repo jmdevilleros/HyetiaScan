@@ -1,5 +1,5 @@
 *************************************************************************
-# HyetiaScan 1.2.2
+# HyetiaScan 1.2.3
 
 Análisis de lluvias, detección de aguaceros y gráficos de curvas de Huff
 
