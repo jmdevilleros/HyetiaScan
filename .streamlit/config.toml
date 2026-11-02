@@ -1,12 +1,14 @@
 [theme]
 primaryColor="#5d83e2"
-backgroundColor="#010e29"
-secondaryBackgroundColor="#18223B"
+backgroundColor="#102240"
+secondaryBackgroundColor="#283452"
 textColor="#d7ebef"
 
 [server]
-maxUploadSize = 200
-maxMessageSize = 300
+maxUploadSize = 300
+baseUrlPath = "/analysis"
+headless = true
+address = "localhost"
 
 [browser]
 gatherUsageStats = false

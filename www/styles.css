@@ -1,0 +1,54 @@
+/* styles.css */
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+}
+
+.container {
+    text-align: center;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-image: url("HyetiaScan_Splash1.jpg");
+    background-size: 100% 100%;    
+    background-position: center;
+}
+
+h1 {
+    font-size: 60px;
+    color: white;
+    text-shadow: 4px 4px 4px rgba(0, 0, 0, 1);
+}
+
+h2 {
+    font-family: Arial, sans-serif;
+    color: #043e8a;
+    font-size: 30px;
+    margin-top: 20px;
+}
+
+button {
+    width: 200px;
+    height: 50px;
+    background-color: rgba(63, 118, 190, 0.8);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 18px;
+    margin-top: 25px;
+}
+
+footer {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    color: #fefeff;
+    background-color: rgba(191, 212, 240, 0.5);
+    padding: 10px;
+    text-align: center;
+    font-size: 12px;
+}
